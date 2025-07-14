@@ -36,28 +36,6 @@ services:
     healthCheckPath: /health
     autoDeploy: true
 
-  - type: worker
-    name: youtube-download-celery
-    env: python
-    buildCommand: pip install -r requirements.txt
-    startCommand: celery -A app.infrastructure.celery.celery_app worker --loglevel=info --concurrency=1
-    envVars:
-      - key: DATABASE_URL
-        fromDatabase:
-          name: youtube-downloads-db
-          property: connectionString
-      - key: SECRET_KEY
-        generateValue: true
-      - key: VIDEOS_DIR
-        value: /app/videos
-      - key: MAX_CONCURRENT_DOWNLOADS
-        value: 1
-      - key: LOG_LEVEL
-        value: INFO
-      - key: LOG_FORMAT
-        value: json
-    autoDeploy: true
-
 databases:
   - name: youtube-downloads-db
     databaseName: youtube_downloads
