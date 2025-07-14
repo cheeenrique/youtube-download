@@ -109,7 +109,7 @@ class ServiceProvider:
     
     def register_external_services(self):
         """Registra serviços externos"""
-        # Aqui você registraria serviços como Redis, Database, etc.
+        # Aqui você registraria serviços como Database, Cache (mock), etc.
         pass
     
     def setup_all(self):

@@ -1,3 +1,6 @@
+# Arquivo desativado: não usar Redis neste deploy
+# Todo o conteúdo foi comentado para evitar importação acidental.
+'''
 import json
 import pickle
 from typing import Any, Optional, Dict, List, Union
@@ -338,3 +341,4 @@ class RedisCache:
 
 # Instância global do cache
 redis_cache = RedisCache() 
+''' 

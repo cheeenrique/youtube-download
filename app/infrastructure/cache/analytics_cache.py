@@ -4,7 +4,7 @@ import hashlib
 import json
 import logging
 
-from .redis_cache import redis_cache
+from .mock_cache import mock_cache as redis_cache
 
 logger = logging.getLogger(__name__)
 

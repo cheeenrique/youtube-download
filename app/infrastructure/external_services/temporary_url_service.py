@@ -279,6 +279,5 @@ class TemporaryURLService:
     
     def check_rate_limit(self, download_id: UUID, token: str, max_requests: int = 10, window_seconds: int = 60) -> bool:
         """Verifica rate limit para um link temporário"""
-        # Esta implementação seria integrada com Redis
-        # Por enquanto, retorna True (sem limite)
+        # Esta implementação pode ser integrada com cache distribuído, mas não usa Redis neste deploy.
         return True 

@@ -212,38 +212,6 @@ def add_default_health_checkers(monitoring_service: MonitoringService) -> None:
                 response_time_ms=None
             )
     
-    def check_redis_health() -> HealthCheck:
-        """Check Redis connectivity"""
-        try:
-            import redis
-            
-            r = redis.Redis(
-                host=getattr(settings, 'redis_host', 'localhost'),
-                port=getattr(settings, 'redis_port', 6379),
-                db=getattr(settings, 'redis_db', 0),
-                socket_timeout=5
-            )
-            
-            start_time = time.time()
-            r.ping()
-            response_time = (time.time() - start_time) * 1000
-            
-            return HealthCheck(
-                name="redis",
-                status="healthy",
-                message="Redis connection is working",
-                timestamp=datetime.now(timezone.utc),
-                response_time_ms=response_time
-            )
-        except Exception as e:
-            return HealthCheck(
-                name="redis",
-                status="unhealthy",
-                message=f"Redis connection failed: {str(e)}",
-                timestamp=datetime.now(timezone.utc),
-                response_time_ms=None
-            )
-    
     def check_celery_health() -> HealthCheck:
         """Check Celery worker health"""
         try:
@@ -349,7 +317,6 @@ def add_default_health_checkers(monitoring_service: MonitoringService) -> None:
     
     # Add health checkers
     monitoring_service.add_health_checker(check_database_health)
-    monitoring_service.add_health_checker(check_redis_health)
     monitoring_service.add_health_checker(check_celery_health)
     monitoring_service.add_health_checker(check_api_health)
     monitoring_service.add_health_checker(check_disk_space)
