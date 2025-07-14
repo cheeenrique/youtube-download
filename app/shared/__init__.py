@@ -1,0 +1,1 @@
+# Shared Layer - Utilitários compartilhados 

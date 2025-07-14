@@ -1,0 +1,179 @@
+services:
+  api:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    container_name: youtube-download-api
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://youtube_user:youtube_pass@db:5432/youtube_downloads
+      - REDIS_URL=redis://redis:6379
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - API_V1_STR=/api/v1
+      - PROJECT_NAME=YouTube Download API
+      - DEBUG=false
+      - SECRET_KEY=${SECRET_KEY:-your-secret-key-change-in-production}
+      - VIDEOS_DIR=/app/videos
+      - MAX_CONCURRENT_DOWNLOADS=1
+      - TEMP_FILE_EXPIRATION=3600
+      - UPLOAD_TO_DRIVE=false
+      - RATE_LIMIT_PER_MINUTE=60
+      - RATE_LIMIT_PER_HOUR=1000
+      - LOG_LEVEL=INFO
+      - LOG_FORMAT=json
+    volumes:
+      - ./videos:/app/videos
+      - ./logs:/app/logs
+      - ./alembic.ini:/app/alembic.ini
+      - ./alembic:/app/alembic
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - youtube-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  db:
+    image: postgres:15-alpine
+    container_name: youtube-download-db
+    environment:
+      - POSTGRES_DB=youtube_downloads
+      - POSTGRES_USER=youtube_user
+      - POSTGRES_PASSWORD=youtube_pass
+      - POSTGRES_INITDB_ARGS=--encoding=UTF-8 --lc-collate=C --lc-ctype=C
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+    networks:
+      - youtube-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U youtube_user -d youtube_downloads"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  redis:
+    image: redis:7-alpine
+    container_name: youtube-download-redis
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    networks:
+      - youtube-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  celery:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    container_name: youtube-download-celery
+    command: celery -A app.infrastructure.celery.celery_app worker --loglevel=info --concurrency=1 --max-tasks-per-child=1000
+    environment:
+      - DATABASE_URL=postgresql://youtube_user:youtube_pass@db:5432/youtube_downloads
+      - REDIS_URL=redis://redis:6379
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - VIDEOS_DIR=/app/videos
+      - MAX_CONCURRENT_DOWNLOADS=1
+      - LOG_LEVEL=INFO
+      - LOG_FORMAT=json
+      - SECRET_KEY=${SECRET_KEY:-your-secret-key-change-in-production}
+    volumes:
+      - ./videos:/app/videos
+      - ./logs:/app/logs
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - youtube-network
+    healthcheck:
+      test: ["CMD", "celery", "-A", "app.infrastructure.celery.celery_app", "inspect", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  celery-beat:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    container_name: youtube-download-celery-beat
+    command: celery -A app.infrastructure.celery.celery_app beat --loglevel=info
+    environment:
+      - DATABASE_URL=postgresql://youtube_user:youtube_pass@db:5432/youtube_downloads
+      - REDIS_URL=redis://redis:6379
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - VIDEOS_DIR=/app/videos
+      - LOG_LEVEL=INFO
+      - LOG_FORMAT=json
+      - SECRET_KEY=${SECRET_KEY:-your-secret-key-change-in-production}
+    volumes:
+      - ./videos:/app/videos
+      - ./logs:/app/logs
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - youtube-network
+
+  nginx:
+    image: nginx:alpine
+    container_name: youtube-download-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./docker/nginx/conf.d:/etc/nginx/conf.d
+      - ./videos:/var/www/videos:ro
+      - ./logs/nginx:/var/log/nginx
+    depends_on:
+      - api
+    restart: unless-stopped
+    networks:
+      - youtube-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  youtube-network:
+    driver: bridge

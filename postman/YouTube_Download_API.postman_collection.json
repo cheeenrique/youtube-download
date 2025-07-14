@@ -1,0 +1,1550 @@
+{
+	"info": {
+		"_postman_id": "youtube-download-api-collection",
+		"name": "YouTube Download API",
+		"description": "Coleção completa para testar a YouTube Download API com todas as funcionalidades: downloads, Google Drive, URLs temporárias, analytics, otimização, segurança e monitoramento.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "youtube-download-api"
+	},
+	"item": [
+		{
+			"name": "🔐 Autenticação",
+			"item": [
+				{
+					"name": "Registrar Usuário",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"usuario_teste\",\n  \"email\": \"usuario@example.com\",\n  \"password\": \"senha123\",\n  \"full_name\": \"Usuário Teste\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/auth/register",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"register"
+							]
+						},
+						"description": "Registrar novo usuário no sistema"
+					},
+					"response": []
+				},
+				{
+					"name": "Login",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"usuario_teste\",\n  \"password\": \"senha123\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/auth/login",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"login"
+							]
+						},
+						"description": "Fazer login e obter tokens JWT"
+					},
+					"response": []
+				},
+				{
+					"name": "Obter Perfil",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/auth/profile",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"profile"
+							]
+						},
+						"description": "Obter perfil do usuário autenticado"
+					},
+					"response": []
+				},
+				{
+					"name": "Atualizar Perfil",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"full_name\": \"Novo Nome\",\n  \"email\": \"novo@example.com\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/auth/profile",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"profile"
+							]
+						},
+						"description": "Atualizar perfil do usuário"
+					},
+					"response": []
+				},
+				{
+					"name": "Alterar Senha",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"current_password\": \"senha123\",\n  \"new_password\": \"nova_senha456\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/auth/change-password",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"change-password"
+							]
+						},
+						"description": "Alterar senha do usuário"
+					},
+					"response": []
+				},
+				{
+					"name": "Logout",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/auth/logout",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"logout"
+							]
+						},
+						"description": "Fazer logout e invalidar token"
+					},
+					"response": []
+				},
+				{
+					"name": "Listar Usuários (Admin)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/auth/users?skip=0&limit=10",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"users"
+							],
+							"query": [
+								{
+									"key": "skip",
+									"value": "0"
+								},
+								{
+									"key": "limit",
+									"value": "10"
+								}
+							]
+						},
+						"description": "Listar usuários (apenas admin)"
+					},
+					"response": []
+				},
+				{
+					"name": "Obter Usuário (Admin)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/auth/users/{{user_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"users",
+								"{{user_id}}"
+							]
+						},
+						"description": "Obter usuário específico (apenas admin)"
+					},
+					"response": []
+				},
+				{
+					"name": "Atualizar Usuário (Admin)",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"is_active\": true,\n  \"role\": \"user\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/auth/users/{{user_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"users",
+								"{{user_id}}"
+							]
+						},
+						"description": "Atualizar usuário (apenas admin)"
+					},
+					"response": []
+				},
+				{
+					"name": "Deletar Usuário (Admin)",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/auth/users/{{user_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"users",
+								"{{user_id}}"
+							]
+						},
+						"description": "Deletar usuário (apenas admin)"
+					},
+					"response": []
+				}
+			],
+			"description": "Endpoints de autenticação e gerenciamento de usuários"
+		},
+		{
+			"name": "🛡️ Segurança",
+			"item": [
+				{
+					"name": "Gerar Token",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"test_user\",\n  \"password\": \"test_password\",\n  \"expires_in\": 3600\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/security/token",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"security",
+								"token"
+							]
+						},
+						"description": "Gerar token JWT para autenticação"
+					},
+					"response": []
+				},
+				{
+					"name": "Validar Entrada",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"inputs\": [\n    {\n      \"type\": \"url\",\n      \"value\": \"https://www.youtube.com/watch?v=dQw4w9WgXcQ\",\n      \"strict\": true\n    },\n    {\n      \"type\": \"email\",\n      \"value\": \"test@example.com\"\n    },\n    {\n      \"type\": \"filename\",\n      \"value\": \"video.mp4\"\n    }\n  ]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/security/validate",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"security",
+								"validate"
+							]
+						},
+						"description": "Validar diferentes tipos de entrada"
+					},
+					"response": []
+				},
+				{
+					"name": "Eventos de Segurança",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/security/events?severity=high&limit=50",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"security",
+								"events"
+							],
+							"query": [
+								{
+									"key": "severity",
+									"value": "high"
+								},
+								{
+									"key": "limit",
+									"value": "50"
+								}
+							]
+						},
+						"description": "Obter eventos de segurança"
+					},
+					"response": []
+				},
+				{
+					"name": "Estatísticas de Segurança",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/security/stats",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"security",
+								"stats"
+							]
+						},
+						"description": "Obter estatísticas de segurança"
+					},
+					"response": []
+				},
+				{
+					"name": "Bloquear IP",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"ip_address\": \"192.168.1.100\",\n  \"duration_minutes\": 60\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/security/block-ip",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"security",
+								"block-ip"
+							]
+						},
+						"description": "Bloquear um IP por suspeita de atividade maliciosa"
+					},
+					"response": []
+				},
+				{
+					"name": "Testar Autenticação",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/security/test-auth",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"security",
+								"test-auth"
+							]
+						},
+						"description": "Testar se o token de autenticação é válido"
+					},
+					"response": []
+				}
+			],
+			"description": "Endpoints relacionados à segurança da API"
+		},
+		{
+			"name": "📊 Monitoramento",
+			"item": [
+				{
+					"name": "Métricas do Sistema",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/monitoring/metrics?limit=100",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"monitoring",
+								"metrics"
+							],
+							"query": [
+								{
+									"key": "limit",
+									"value": "100"
+								}
+							]
+						},
+						"description": "Obter métricas do sistema"
+					},
+					"response": []
+				},
+				{
+					"name": "Estatísticas de CPU",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/monitoring/metrics/cpu_usage/stats",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"monitoring",
+								"metrics",
+								"cpu_usage",
+								"stats"
+							]
+						},
+						"description": "Obter estatísticas detalhadas de uso de CPU"
+					},
+					"response": []
+				},
+				{
+					"name": "Status de Saúde",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/monitoring/health",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"monitoring",
+								"health"
+							]
+						},
+						"description": "Verificar status de saúde do sistema"
+					},
+					"response": []
+				},
+				{
+					"name": "Executar Health Checks",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/monitoring/health/check",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"monitoring",
+								"health",
+								"check"
+							]
+						},
+						"description": "Executar health checks manualmente"
+					},
+					"response": []
+				},
+				{
+					"name": "Alertas Ativos",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/monitoring/alerts?resolved=false&limit=50",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"monitoring",
+								"alerts"
+							],
+							"query": [
+								{
+									"key": "resolved",
+									"value": "false"
+								},
+								{
+									"key": "limit",
+									"value": "50"
+								}
+							]
+						},
+						"description": "Obter alertas ativos do sistema"
+					},
+					"response": []
+				},
+				{
+					"name": "Estatísticas de Alertas",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/monitoring/alerts/stats",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"monitoring",
+								"alerts",
+								"stats"
+							]
+						},
+						"description": "Obter estatísticas de alertas"
+					},
+					"response": []
+				},
+				{
+					"name": "Gerar Relatório",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"report_type\": \"daily\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/monitoring/report",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"monitoring",
+								"report"
+							]
+						},
+						"description": "Gerar relatório de monitoramento"
+					},
+					"response": []
+				},
+				{
+					"name": "Configurar Notificação Email",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"channel\": \"email\",\n  \"enabled\": true,\n  \"recipients\": [\"admin@example.com\"],\n  \"severity_filter\": [\"error\", \"critical\"],\n  \"rate_limit_minutes\": 15\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/monitoring/config/notifications",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"monitoring",
+								"config",
+								"notifications"
+							]
+						},
+						"description": "Configurar notificações por email"
+					},
+					"response": []
+				},
+				{
+					"name": "Configurar Webhook",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"channel\": \"webhook\",\n  \"enabled\": true,\n  \"webhook_url\": \"https://your-webhook-url.com/alerts\",\n  \"severity_filter\": [\"error\", \"critical\"],\n  \"rate_limit_minutes\": 5\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/monitoring/config/notifications",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"monitoring",
+								"config",
+								"notifications"
+							]
+						},
+						"description": "Configurar webhook para notificações"
+					},
+					"response": []
+				}
+			],
+			"description": "Endpoints relacionados ao monitoramento do sistema"
+		},
+		{
+			"name": "📥 Downloads",
+			"item": [
+				{
+					"name": "Iniciar Download",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"url\": \"https://www.youtube.com/watch?v=dQw4w9WgXcQ\",\n  \"quality\": \"720p\",\n  \"format\": \"mp4\",\n  \"title\": \"Test Video\",\n  \"description\": \"Video for testing purposes\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/downloads/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"downloads",
+								""
+							]
+						},
+						"description": "Iniciar download de um vídeo do YouTube"
+					},
+					"response": []
+				},
+				{
+					"name": "Listar Downloads",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/downloads/?page=1&size=20&status=completed",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"downloads",
+								""
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "size",
+									"value": "20"
+								},
+								{
+									"key": "status",
+									"value": "completed"
+								}
+							]
+						},
+						"description": "Listar downloads com paginação e filtros"
+					},
+					"response": []
+				},
+				{
+					"name": "Detalhes do Download",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/downloads/{{download_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"downloads",
+								"{{download_id}}"
+							]
+						},
+						"description": "Obter detalhes de um download específico"
+					},
+					"response": []
+				},
+				{
+					"name": "Cancelar Download",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/downloads/{{download_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"downloads",
+								"{{download_id}}"
+							]
+						},
+						"description": "Cancelar um download em andamento"
+					},
+					"response": []
+				},
+				{
+					"name": "Progresso do Download (SSE)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/downloads/{{download_id}}/stream",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"downloads",
+								"{{download_id}}",
+								"stream"
+							]
+						},
+						"description": "Stream de progresso do download via Server-Sent Events"
+					},
+					"response": []
+				}
+			],
+			"description": "Endpoints relacionados aos downloads de vídeos"
+		},
+		{
+			"name": "☁️ Google Drive",
+			"item": [
+				{
+					"name": "Configurar Google Drive",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"client_id\": \"your-client-id.apps.googleusercontent.com\",\n  \"client_secret\": \"your-client-secret\",\n  \"refresh_token\": \"your-refresh-token\",\n  \"folder_id\": \"your-folder-id\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/drive/config",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"drive",
+								"config"
+							]
+						},
+						"description": "Configurar integração com Google Drive"
+					},
+					"response": []
+				},
+				{
+					"name": "Upload para Google Drive",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"download_id\": \"{{download_id}}\",\n  \"folder_id\": \"optional-folder-id\",\n  \"filename\": \"custom-filename.mp4\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/drive/upload",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"drive",
+								"upload"
+							]
+						},
+						"description": "Fazer upload de um arquivo para o Google Drive"
+					},
+					"response": []
+				},
+				{
+					"name": "Listar Pastas",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/drive/folders",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"drive",
+								"folders"
+							]
+						},
+						"description": "Listar pastas do Google Drive"
+					},
+					"response": []
+				},
+				{
+					"name": "Informações de Quota",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/drive/quota",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"drive",
+								"quota"
+							]
+						},
+						"description": "Obter informações de quota do Google Drive"
+					},
+					"response": []
+				}
+			],
+			"description": "Endpoints relacionados à integração com Google Drive"
+		},
+		{
+			"name": "🔗 URLs Temporárias",
+			"item": [
+				{
+					"name": "Criar URL Temporária",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"download_id\": \"{{download_id}}\",\n  \"expires_in_hours\": 24,\n  \"max_accesses\": 10,\n  \"description\": \"Temporary access for testing\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/temporary-urls/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"temporary-urls",
+								""
+							]
+						},
+						"description": "Criar uma URL temporária para download"
+					},
+					"response": []
+				},
+				{
+					"name": "Acessar URL Temporária",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/temporary-urls/{{temp_url_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"temporary-urls",
+								"{{temp_url_id}}"
+							]
+						},
+						"description": "Acessar uma URL temporária (sem autenticação)"
+					},
+					"response": []
+				},
+				{
+					"name": "Listar URLs Temporárias",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/temporary-urls/?page=1&size=20",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"temporary-urls",
+								""
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "size",
+									"value": "20"
+								}
+							]
+						},
+						"description": "Listar URLs temporárias criadas"
+					},
+					"response": []
+				},
+				{
+					"name": "Revogar URL Temporária",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/temporary-urls/{{temp_url_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"temporary-urls",
+								"{{temp_url_id}}"
+							]
+						},
+						"description": "Revogar uma URL temporária"
+					},
+					"response": []
+				}
+			],
+			"description": "Endpoints relacionados às URLs temporárias"
+		},
+		{
+			"name": "📈 Analytics",
+			"item": [
+				{
+					"name": "Dashboard de Analytics",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/analytics/dashboard",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"analytics",
+								"dashboard"
+							]
+						},
+						"description": "Obter dashboard de analytics"
+					},
+					"response": []
+				},
+				{
+					"name": "Estatísticas Gerais",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/analytics/stats",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"analytics",
+								"stats"
+							]
+						},
+						"description": "Obter estatísticas gerais"
+					},
+					"response": []
+				},
+				{
+					"name": "Logs de Download",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/analytics/logs?start_date=2024-01-01&end_date=2024-12-31&page=1&size=50",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"analytics",
+								"logs"
+							],
+							"query": [
+								{
+									"key": "start_date",
+									"value": "2024-01-01"
+								},
+								{
+									"key": "end_date",
+									"value": "2024-12-31"
+								},
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "size",
+									"value": "50"
+								}
+							]
+						},
+						"description": "Obter logs de download com filtros de data"
+					},
+					"response": []
+				},
+				{
+					"name": "Relatórios",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/analytics/reports?report_type=daily&start_date=2024-01-01&end_date=2024-01-31",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"analytics",
+								"reports"
+							],
+							"query": [
+								{
+									"key": "report_type",
+									"value": "daily"
+								},
+								{
+									"key": "start_date",
+									"value": "2024-01-01"
+								},
+								{
+									"key": "end_date",
+									"value": "2024-01-31"
+								}
+							]
+						},
+						"description": "Obter relatórios de analytics"
+					},
+					"response": []
+				}
+			],
+			"description": "Endpoints relacionados aos analytics e relatórios"
+		},
+		{
+			"name": "⚡ Otimização",
+			"item": [
+				{
+					"name": "Status do Cache",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/optimization/cache/status",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"optimization",
+								"cache",
+								"status"
+							]
+						},
+						"description": "Verificar status do cache Redis"
+					},
+					"response": []
+				},
+				{
+					"name": "Limpar Cache",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/optimization/cache/clear",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"optimization",
+								"cache",
+								"clear"
+							]
+						},
+						"description": "Limpar cache Redis"
+					},
+					"response": []
+				},
+				{
+					"name": "Análise de Performance",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/optimization/performance/analysis",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"optimization",
+								"performance",
+								"analysis"
+							]
+						},
+						"description": "Obter análise de performance do sistema"
+					},
+					"response": []
+				},
+				{
+					"name": "Otimizar Banco de Dados",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/optimization/database/optimize",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"optimization",
+								"database",
+								"optimize"
+							]
+						},
+						"description": "Executar otimizações no banco de dados"
+					},
+					"response": []
+				}
+			],
+			"description": "Endpoints relacionados à otimização do sistema"
+		},
+		{
+			"name": "🔧 Utilitários",
+			"item": [
+				{
+					"name": "Health Check",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/health",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"health"
+							]
+						},
+						"description": "Health check básico da API"
+					},
+					"response": []
+				},
+				{
+					"name": "Informações da API",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								""
+							]
+						},
+						"description": "Obter informações sobre os endpoints disponíveis"
+					},
+					"response": []
+				}
+			],
+			"description": "Endpoints utilitários da API"
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8000",
+			"type": "string"
+		},
+		{
+			"key": "auth_token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "download_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "temp_url_id",
+			"value": "",
+			"type": "string"
+		}
+	]
+} 

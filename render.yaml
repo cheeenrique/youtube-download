@@ -1,0 +1,65 @@
+services:
+  - type: web
+    name: youtube-download-api
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: youtube-downloads-db
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      - key: API_V1_STR
+        value: /api/v1
+      - key: PROJECT_NAME
+        value: YouTube Download API
+      - key: DEBUG
+        value: false
+      - key: VIDEOS_DIR
+        value: /app/videos
+      - key: MAX_CONCURRENT_DOWNLOADS
+        value: 1
+      - key: TEMP_FILE_EXPIRATION
+        value: 3600
+      - key: UPLOAD_TO_DRIVE
+        value: false
+      - key: RATE_LIMIT_PER_MINUTE
+        value: 60
+      - key: RATE_LIMIT_PER_HOUR
+        value: 1000
+      - key: LOG_LEVEL
+        value: INFO
+      - key: LOG_FORMAT
+        value: json
+    healthCheckPath: /health
+    autoDeploy: true
+
+  - type: worker
+    name: youtube-download-celery
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: celery -A app.infrastructure.celery.celery_app worker --loglevel=info --concurrency=1
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: youtube-downloads-db
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      - key: VIDEOS_DIR
+        value: /app/videos
+      - key: MAX_CONCURRENT_DOWNLOADS
+        value: 1
+      - key: LOG_LEVEL
+        value: INFO
+      - key: LOG_FORMAT
+        value: json
+    autoDeploy: true
+
+databases:
+  - name: youtube-downloads-db
+    databaseName: youtube_downloads
+    user: youtube_user
+    plan: free
