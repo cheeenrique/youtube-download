@@ -37,7 +37,34 @@ POST /migrate
 }
 ```
 
-### 2. Verificar Status das Migrações
+### 2. Marcar Migrações como Aplicadas
+
+```http
+POST /migrate/stamp
+```
+
+**Descrição:** Marca as migrações como aplicadas sem executá-las. Útil quando o banco já tem a estrutura mas o Alembic não sabe.
+
+**Resposta de Sucesso:**
+
+```json
+{
+  "success": true,
+  "message": "Migrações marcadas como aplicadas com sucesso",
+  "stdout": "...",
+  "stderr": "..."
+}
+```
+
+**Resposta de Erro:**
+
+```json
+{
+  "detail": "Erro ao marcar migrações: [mensagem de erro]"
+}
+```
+
+### 3. Verificar Status das Migrações
 
 ```http
 GET /migrate/status
@@ -56,7 +83,7 @@ GET /migrate/status
 }
 ```
 
-### 3. Verificar Histórico de Migrações
+### 4. Verificar Histórico de Migrações
 
 ```http
 GET /migrate/history
@@ -87,7 +114,11 @@ GET /migrate/history
 ### 2. Via cURL
 
 ```bash
+# Executar migrações
 curl -X POST https://seu-dominio-railway.up.railway.app/migrate
+
+# Marcar migrações como aplicadas (quando tabelas já existem)
+curl -X POST https://seu-dominio-railway.up.railway.app/migrate/stamp
 ```
 
 ### 3. Via Navegador (apenas para GET)
@@ -152,3 +183,9 @@ Para remover este endpoint:
 
 - Verifique se o usuário do banco tem permissões para criar/modificar tabelas
 - Confirme se a string de conexão está correta
+
+### Erro: "relation already exists" ou "DuplicateTable"
+
+- Este erro ocorre quando o banco já tem as tabelas mas o Alembic não sabe
+- Use o endpoint `/migrate/stamp` para marcar as migrações como aplicadas sem executá-las
+- Depois use `/migrate/status` para verificar se funcionou
