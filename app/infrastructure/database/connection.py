@@ -8,14 +8,20 @@ from app.shared.config import settings
 
 logger = structlog.get_logger()
 
-# Configurar engine do SQLAlchemy
+# Configurar engine do SQLAlchemy (otimizado para Railway)
 engine = create_engine(
     settings.database_url,
     poolclass=QueuePool,
-    pool_size=10,
-    max_overflow=20,
+    pool_size=5,  # Reduzido para economizar recursos
+    max_overflow=10,  # Reduzido
     pool_pre_ping=True,
-    pool_recycle=3600,
+    pool_recycle=1800,  # 30 minutos (reduzido)
+    pool_timeout=30,  # Timeout de 30 segundos
+    connect_args={
+        "connect_timeout": 10,  # Timeout de conexão
+        "application_name": "youtube_download_api",
+        "options": "-c statement_timeout=30000"  # 30 segundos timeout por query
+    },
     echo=settings.debug
 )
 
@@ -28,16 +34,30 @@ SessionLocal = sessionmaker(
 
 
 def get_db() -> Generator[Session, None, None]:
-    """Dependency para obter sessão do banco de dados"""
-    db = SessionLocal()
-    try:
-        yield db
-    except Exception as e:
-        logger.error("Erro na sessão do banco", error=str(e))
-        db.rollback()
-        raise
-    finally:
-        db.close()
+    """Dependency para obter sessão do banco de dados com retry"""
+    max_retries = 3
+    retry_delay = 1  # segundos
+    
+    for attempt in range(max_retries):
+        try:
+            db = SessionLocal()
+            yield db
+            break
+        except Exception as e:
+            logger.error(f"Erro na sessão do banco (tentativa {attempt + 1}/{max_retries})", error=str(e))
+            if attempt < max_retries - 1:
+                import time
+                time.sleep(retry_delay)
+                retry_delay *= 2  # Backoff exponencial
+                continue
+            else:
+                db.rollback()
+                raise
+        finally:
+            try:
+                db.close()
+            except:
+                pass
 
 
 def init_db():
