@@ -52,6 +52,7 @@ async def api_root():
             "migrations": {
                 "run": "/migrate",
                 "stamp": "/migrate/stamp",
+                "force": "/migrate/force",
                 "status": "/migrate/status",
                 "history": "/migrate/history"
             },

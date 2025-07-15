@@ -64,7 +64,34 @@ POST /migrate/stamp
 }
 ```
 
-### 3. Verificar Status das Migrações
+### 3. Forçar Execução de Migrações
+
+```http
+POST /migrate/force
+```
+
+**Descrição:** Força a execução das migrações mesmo que estejam marcadas como aplicadas. Útil quando as migrações foram marcadas mas não executadas.
+
+**Resposta de Sucesso:**
+
+```json
+{
+  "success": true,
+  "message": "Migrações forçadas executadas com sucesso",
+  "stdout": "...",
+  "stderr": "..."
+}
+```
+
+**Resposta de Erro:**
+
+```json
+{
+  "detail": "Erro ao forçar migrações: [mensagem de erro]"
+}
+```
+
+### 4. Verificar Status das Migrações
 
 ```http
 GET /migrate/status
@@ -83,7 +110,7 @@ GET /migrate/status
 }
 ```
 
-### 4. Verificar Histórico de Migrações
+### 5. Verificar Histórico de Migrações
 
 ```http
 GET /migrate/history
@@ -119,6 +146,9 @@ curl -X POST https://seu-dominio-railway.up.railway.app/migrate
 
 # Marcar migrações como aplicadas (quando tabelas já existem)
 curl -X POST https://seu-dominio-railway.up.railway.app/migrate/stamp
+
+# Forçar execução de migrações (quando foram marcadas mas não executadas)
+curl -X POST https://seu-dominio-railway.up.railway.app/migrate/force
 ```
 
 ### 3. Via Navegador (apenas para GET)
@@ -188,4 +218,10 @@ Para remover este endpoint:
 
 - Este erro ocorre quando o banco já tem as tabelas mas o Alembic não sabe
 - Use o endpoint `/migrate/stamp` para marcar as migrações como aplicadas sem executá-las
+- Depois use `/migrate/status` para verificar se funcionou
+
+### Erro: "column does not exist" ou "UndefinedColumn"
+
+- Este erro ocorre quando as migrações foram marcadas como aplicadas mas não foram executadas
+- Use o endpoint `/migrate/force` para forçar a execução das migrações
 - Depois use `/migrate/status` para verificar se funcionou

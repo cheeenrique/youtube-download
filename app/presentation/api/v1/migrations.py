@@ -93,6 +93,59 @@ async def stamp_migrations() -> Dict[str, Any]:
         )
 
 
+@router.post("/migrate/force", tags=["Migrations"])
+async def force_migrations() -> Dict[str, Any]:
+    """
+    Força a execução das migrações mesmo que estejam marcadas como aplicadas.
+    Útil quando as migrações foram marcadas mas não executadas.
+    """
+    try:
+        logger.info("Forçando execução de migrações...")
+        
+        # Primeiro, marca como não aplicada
+        result1 = subprocess.run(
+            [sys.executable, "-m", "alembic", "stamp", "base"],
+            capture_output=True,
+            text=True,
+            cwd=os.getcwd(),
+            env=os.environ.copy()
+        )
+        
+        if result1.returncode != 0:
+            logger.warning(f"Aviso ao marcar como base: {result1.stderr}")
+        
+        # Depois, executa as migrações
+        result2 = subprocess.run(
+            [sys.executable, "-m", "alembic", "upgrade", "head"],
+            capture_output=True,
+            text=True,
+            cwd=os.getcwd(),
+            env=os.environ.copy()
+        )
+        
+        if result2.returncode == 0:
+            logger.info("Migrações forçadas executadas com sucesso")
+            return {
+                "success": True,
+                "message": "Migrações forçadas executadas com sucesso",
+                "stdout": result2.stdout,
+                "stderr": result2.stderr
+            }
+        else:
+            logger.error(f"Erro ao forçar migrações: {result2.stderr}")
+            raise HTTPException(
+                status_code=500,
+                detail=f"Erro ao forçar migrações: {result2.stderr}"
+            )
+            
+    except Exception as e:
+        logger.error(f"Exceção ao forçar migrações: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Erro interno: {str(e)}"
+        )
+
+
 @router.get("/migrate/status", tags=["Migrations"])
 async def get_migration_status() -> Dict[str, Any]:
     """
