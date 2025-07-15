@@ -19,7 +19,7 @@
 ## ✅ Fase 3: Sistema de Filas
 
 - [x] Integração com Celery
-- [x] Redis como broker
+- [x] PostgreSQL como broker (substituindo Redis)
 - [x] Filas de download
 - [x] Status de progresso
 - [x] Retry automático
@@ -80,7 +80,7 @@
 - [x] Monitoramento de recursos
 - [x] Análise de performance
 
-## ✅ Fase 11: Segurança
+## ✅ Fase 11: Segurança e Autenticação
 
 - [x] Autenticação JWT
 - [x] Sistema de usuários e roles
@@ -104,15 +104,29 @@
 - [x] Monitoramento de recursos
 - [x] Alertas inteligentes
 
-## ✅ Fase 13: Interface Web
+## ✅ Fase 13: Sistema de Usuários e Downloads
 
-- [x] Frontend básico
-- [x] Upload de vídeos
-- [x] Monitoramento de downloads
-- [x] Gerenciamento de filas
-- [x] Responsivo
+- [x] **Isolamento por usuário**: Cada usuário vê apenas seus downloads
+- [x] **Admin global**: Administradores podem ver todos os downloads
+- [x] **Campo user_id**: Downloads vinculados a usuários específicos
+- [x] **Controle de acesso**: Usuários só podem editar/deletar seus downloads
+- [x] **Storage types**: Sistema de armazenamento temporário/permanente
+- [x] **Limpeza automática**: Downloads temporários limpos a cada 1h
+- [x] **Estrutura de pastas**: Separação temp/permanent/temporary
+- [x] **Tarefas Celery**: Limpeza automática de arquivos temporários
+- [x] **Validação de permissões**: Middleware de verificação de acesso
+- [x] **Logs de auditoria**: Rastreamento de ações por usuário
 
-## ⏸️ Fase 14: Backup e Recuperação
+## ✅ Fase 14: Docker Development
+
+- [x] **Modo desenvolvimento**: Hot-reload configurado
+- [x] **Volumes mapeados**: Código-fonte montado como volume
+- [x] **Uvicorn com --reload**: Servidor reinicia automaticamente
+- [x] **Estrutura de volumes**: app, videos, logs, alembic
+- [x] **Comandos de desenvolvimento**: up, down, logs, restart
+- [x] **Documentação Docker**: Guias de uso e troubleshooting
+
+## ⏸️ Fase 15: Backup e Recuperação
 
 - [ ] Backup automático
 - [ ] Recuperação de dados
@@ -120,7 +134,7 @@
 - [ ] Sincronização
 - [ ] Restauração
 
-## 🔄 Fase 15: Testes e Deploy
+## 🔄 Fase 16: Testes e Deploy
 
 - [ ] Testes de carga
 - [ ] Testes de stress
@@ -128,7 +142,7 @@
 - [ ] CI/CD pipeline
 - [ ] Monitoramento de produção
 
-## 🔄 Fase 16: Otimizações Finais
+## 🔄 Fase 17: Otimizações Finais
 
 - [ ] Otimização de performance
 - [ ] Redução de uso de recursos
@@ -138,18 +152,18 @@
 
 ---
 
-## Status Geral: 13/16 Fases Concluídas (81%)
+## Status Geral: 14/17 Fases Concluídas (82%)
 
 ### Próximos Passos:
 
-1. Implementar Fase 14 (Backup e Recuperação)
-2. Finalizar Fase 15 (Testes e Deploy)
-3. Otimizações finais (Fase 16)
+1. Implementar Fase 15 (Backup e Recuperação)
+2. Finalizar Fase 16 (Testes e Deploy)
+3. Otimizações finais (Fase 17)
 
 ### Funcionalidades Principais Implementadas:
 
 - ✅ Download de vídeos do YouTube
-- ✅ Sistema de filas com Celery
+- ✅ Sistema de filas com Celery (PostgreSQL broker)
 - ✅ Recursos em tempo real (WebSocket/SSE)
 - ✅ Integração Google Drive
 - ✅ URLs temporárias
@@ -160,6 +174,10 @@
 - ✅ Monitoramento e alertas
 - ✅ API REST completa
 - ✅ Documentação abrangente
+- ✅ **Isolamento por usuário** (nova funcionalidade)
+- ✅ **Tipos de armazenamento** (temporary/permanent)
+- ✅ **Limpeza automática** de arquivos temporários
+- ✅ **Docker development** com hot-reload
 
 ### Funcionalidades de Autenticação Implementadas:
 
@@ -173,3 +191,36 @@
 - ✅ Middleware de autenticação
 - ✅ Rate limiting por usuário
 - ✅ Logs de auditoria de autenticação
+- ✅ **Isolamento de downloads por usuário**
+- ✅ **Controle de acesso granular**
+
+### Funcionalidades de Downloads Implementadas:
+
+- ✅ Download individual e em lote
+- ✅ Múltiplas qualidades de vídeo
+- ✅ Conversão de formatos
+- ✅ Upload para Google Drive
+- ✅ URLs temporárias
+- ✅ Retry de downloads falhados
+- ✅ **Vinculação com usuários**
+- ✅ **Tipos de armazenamento** (temporary/permanent)
+- ✅ **Limpeza automática** de downloads temporários
+- ✅ **Controle de acesso** por usuário
+
+### Sistema de Filas Implementado:
+
+- ✅ Celery workers para processamento
+- ✅ Celery Beat para tarefas agendadas
+- ✅ PostgreSQL como broker (substituindo Redis)
+- ✅ **Limpeza automática** de arquivos temporários
+- ✅ **Limpeza automática** de downloads temporários
+- ✅ Monitoramento de filas
+- ✅ Retry automático de falhas
+
+### Docker Development:
+
+- ✅ Modo desenvolvimento com hot-reload
+- ✅ Volumes mapeados para desenvolvimento
+- ✅ Comandos de gerenciamento
+- ✅ Logs centralizados
+- ✅ Estrutura de pastas organizada

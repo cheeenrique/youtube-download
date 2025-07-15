@@ -11,6 +11,7 @@ psycopg2-binary==2.9.9
 
 # Filas
 celery==5.3.4
+kombu[sqlalchemy]==5.5.4
 
 # Validação e configuração (versões mais antigas que não precisam de Rust)
 pydantic==2.4.2

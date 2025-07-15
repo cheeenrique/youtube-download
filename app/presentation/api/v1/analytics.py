@@ -29,8 +29,9 @@ from app.presentation.schemas.analytics import (
     MetricsSummaryResponse,
     RealTimeMetricsResponse
 )
-from app.infrastructure.database.connection import SessionLocal
+from app.infrastructure.database.connection import get_db
 from app.infrastructure.repositories.download_log_repository_impl import DownloadLogRepositoryImpl
+from app.domain.entities.download_log import DownloadLog as DownloadLogEntity
 from app.infrastructure.celery.tasks.analytics_tasks import (
     generate_daily_report,
     generate_weekly_report,
@@ -43,7 +44,7 @@ from app.infrastructure.celery.tasks.analytics_tasks import (
 router = APIRouter(prefix="/analytics", tags=["Analytics & Reporting"])
 
 
-def get_log_repository(db_session: Session = Depends(SessionLocal)) -> DownloadLogRepositoryImpl:
+def get_log_repository(db_session: Session = Depends(get_db)) -> DownloadLogRepositoryImpl:
     """Dependency para obter o repositório de logs"""
     return DownloadLogRepositoryImpl(db_session)
 

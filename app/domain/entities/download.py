@@ -14,6 +14,7 @@ class Download:
     def __init__(
         self,
         url: str,
+        user_id: Optional[UUID] = None,
         title: Optional[str] = None,
         description: Optional[str] = None,
         duration: Optional[int] = None,
@@ -33,9 +34,11 @@ class Download:
         downloads_count: int = 0,
         last_accessed: Optional[datetime] = None,
         uploaded_to_drive: bool = False,
-        drive_file_id: Optional[str] = None
+        drive_file_id: Optional[str] = None,
+        storage_type: str = "temporary"
     ):
         self.id = id or uuid4()
+        self.user_id = user_id
         self.url = url
         self.title = title
         self.description = description
@@ -56,6 +59,7 @@ class Download:
         self.last_accessed = last_accessed
         self.uploaded_to_drive = uploaded_to_drive
         self.drive_file_id = drive_file_id
+        self.storage_type = storage_type
 
     def start_download(self) -> None:
         """Inicia o download"""
@@ -106,10 +110,16 @@ class Download:
         )
         return datetime.utcnow() > expiration_time
 
+    @property
+    def download_count(self) -> int:
+        """Propriedade para compatibilidade com o modelo"""
+        return self.downloads_count
+
     def to_dict(self) -> dict:
         """Converte a entidade para dicionário"""
         return {
             'id': str(self.id),
+            'user_id': str(self.user_id) if self.user_id else None,
             'url': self.url,
             'title': self.title,
             'description': self.description,
@@ -129,5 +139,6 @@ class Download:
             'downloads_count': self.downloads_count,
             'last_accessed': self.last_accessed.isoformat() if self.last_accessed else None,
             'uploaded_to_drive': self.uploaded_to_drive,
-            'drive_file_id': self.drive_file_id
+            'drive_file_id': self.drive_file_id,
+            'storage_type': self.storage_type
         } 

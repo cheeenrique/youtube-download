@@ -6,6 +6,7 @@ import os
 import yt_dlp
 from uuid import UUID
 import asyncio
+import shutil
 
 from app.infrastructure.celery.celery_app import celery_app
 from app.infrastructure.database.connection import SessionLocal
@@ -64,7 +65,7 @@ def download_video_task(self, download_id: str, url: str, quality: str = "best")
     try:
         # Buscar download no banco
         repo = SQLAlchemyDownloadRepository(db)
-        download = repo.get_by_id(UUID(download_id))
+        download = asyncio.run(repo.get_by_id(UUID(download_id)))
         
         if not download:
             raise ValueError(f"Download não encontrado: {download_id}")
@@ -73,17 +74,33 @@ def download_video_task(self, download_id: str, url: str, quality: str = "best")
         download.status = DownloadStatus.DOWNLOADING
         download.started_at = datetime.now(timezone.utc)
         download.attempts += 1
-        repo.update(download)
+        asyncio.run(repo.update(download))
         
         # Notificar início
         asyncio.run(notification_service.notify_download_progress(
             download_id, 0, 'downloading'
         ))
         
+        # Detectar ffmpeg
+        ffmpeg_path = shutil.which("ffmpeg")
+        if ffmpeg_path:
+            logger.info(f"FFmpeg detectado em: {ffmpeg_path}")
+            format_option = 'bestvideo+bestaudio/best'
+        else:
+            logger.warning("FFmpeg NÃO detectado! Baixando no melhor formato único disponível.")
+            format_option = 'best'
+
+        # Determinar diretório de saída baseado no storage_type
+        if download.storage_type == "temporary":
+            output_dir = os.path.join(settings.videos_dir, 'temp')
+        else:  # permanent
+            output_dir = os.path.join(settings.videos_dir, 'permanent')
+        os.makedirs(output_dir, exist_ok=True)
+
         # Configurar yt-dlp
         ydl_opts = {
-            'format': quality,
-            'outtmpl': os.path.join(settings.videos_dir, '%(title)s.%(ext)s'),
+            'format': format_option,
+            'outtmpl': os.path.join(output_dir, '%(title)s.%(ext)s'),
             'progress_hooks': [ProgressHook(download_id, notification_service)],
             'writethumbnail': True,
             'writesubtitles': False,
@@ -91,8 +108,21 @@ def download_video_task(self, download_id: str, url: str, quality: str = "best")
             'ignoreerrors': False,
             'no_warnings': False,
             'quiet': False,
+            'merge_output_format': 'mp4',
+            'noplaylist': True,
+            'http_headers': {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                'Accept-Language': 'en-us,en;q=0.5',
+                'Sec-Fetch-Mode': 'navigate',
+            },
+            'extractor_retries': 3,
+            'fragment_retries': 3,
+            'retries': 3,
         }
-        
+        if ffmpeg_path:
+            ydl_opts['ffmpeg_location'] = os.path.dirname(ffmpeg_path)
+
         # Download do vídeo
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             # Extrair informações
@@ -119,7 +149,7 @@ def download_video_task(self, download_id: str, url: str, quality: str = "best")
                 download.progress = 100.0
                 
                 # Atualizar no banco
-                repo.update(download)
+                asyncio.run(repo.update(download))
                 
                 # Notificar conclusão
                 asyncio.run(notification_service.notify_download_completed(
@@ -154,7 +184,7 @@ def download_video_task(self, download_id: str, url: str, quality: str = "best")
         if 'download' in locals():
             download.status = DownloadStatus.FAILED
             download.error_message = str(e)
-            repo.update(download)
+            asyncio.run(repo.update(download))
             
             # Notificar erro
             asyncio.run(notification_service.notify_download_failed(
@@ -174,7 +204,7 @@ def update_download_stats_task():
     db = SessionLocal()
     try:
         repo = SQLAlchemyDownloadRepository(db)
-        stats = repo.get_download_stats()
+        stats = asyncio.run(repo.get_download_stats())
         
         # Notificar atualização de estatísticas
         asyncio.run(notification_service.notify_stats_update(stats))
@@ -192,34 +222,36 @@ def update_download_stats_task():
 
 @celery_app.task(name="process_download_queue")
 def process_download_queue_task():
-    """Task para processar a fila de downloads"""
+    """Task para processar toda a fila de downloads pendentes em sequência"""
+    import time
     db = SessionLocal()
     try:
         repo = SQLAlchemyDownloadRepository(db)
-        
-        # Buscar downloads pendentes
-        pending_downloads = repo.get_pending_downloads(limit=1)
-        
-        if pending_downloads:
+        while True:
+            pending_downloads = asyncio.run(repo.list_pending_downloads(limit=1))
+            if not pending_downloads:
+                logger.info("Nenhum download pendente na fila")
+                break
+
             download = pending_downloads[0]
-            
-            # Iniciar download
             download_video_task.delay(
                 str(download.id),
                 download.url,
                 download.quality.value if download.quality else "best"
             )
-            
             logger.info("Download iniciado da fila", download_id=str(download.id))
-            return {"status": "started", "download_id": str(download.id)}
-        else:
-            logger.info("Nenhum download pendente na fila")
-            return {"status": "no_pending_downloads"}
-            
+
+            # Espera o download terminar antes de pegar o próximo
+            while True:
+                updated = asyncio.run(repo.get_by_id(download.id))
+                if updated.status in [DownloadStatus.COMPLETED, DownloadStatus.FAILED]:
+                    break
+                time.sleep(2)  # espera 2 segundos antes de checar de novo
+
+        return {"status": "all_processed"}
     except Exception as e:
         logger.error("Erro ao processar fila", error=str(e))
         raise
-    
     finally:
         db.close()
 
@@ -232,7 +264,7 @@ def retry_failed_downloads_task():
         repo = SQLAlchemyDownloadRepository(db)
         
         # Buscar downloads que falharam
-        failed_downloads = repo.get_downloads_by_status(DownloadStatus.FAILED)
+        failed_downloads = asyncio.run(repo.list_failed_downloads())
         
         retried_count = 0
         for download in failed_downloads:
@@ -240,7 +272,7 @@ def retry_failed_downloads_task():
                 # Resetar status
                 download.status = DownloadStatus.PENDING
                 download.error_message = None
-                repo.update(download)
+                asyncio.run(repo.update(download))
                 
                 # Adicionar à fila
                 download_video_task.delay(

@@ -8,7 +8,7 @@ from sqlalchemy import and_
 
 from app.infrastructure.celery.celery_app import celery_app
 from app.infrastructure.database.connection import SessionLocal
-from app.infrastructure.database.models import DownloadModel, TemporaryFileModel, DownloadLog
+from app.infrastructure.database.models import DownloadModel, TemporaryFileModel, DownloadLog as DownloadLogModel
 from app.domain.value_objects.download_status import DownloadStatus
 from app.shared.config import settings
 from app.infrastructure.repositories.temporary_file_repository_impl import SQLAlchemyTemporaryFileRepository
@@ -73,8 +73,8 @@ def cleanup_old_logs_task():
         cutoff_date = datetime.now(timezone.utc) - timedelta(days=30)
         
         # Buscar logs antigos
-        old_logs = db.query(DownloadLog).filter(
-            DownloadLog.timestamp < cutoff_date
+        old_logs = db.query(DownloadLogModel).filter(
+            DownloadLogModel.created_at < cutoff_date
         ).all()
         
         deleted_count = 0
@@ -210,6 +210,59 @@ def cleanup_temp_directory_task():
     except Exception as e:
         logger.error("Erro na limpeza do diretório temporário", error=str(e))
         raise
+
+
+@celery_app.task(name="cleanup_temporary_downloads")
+def cleanup_temporary_downloads_task():
+    """Task para limpar downloads marcados como temporários (storage_type = 'temporary')"""
+    db = SessionLocal()
+    try:
+        # Definir data limite (1 hora atrás)
+        cutoff_date = datetime.now(timezone.utc) - timedelta(hours=1)
+        
+        # Buscar downloads temporários antigos
+        old_temporary_downloads = db.query(DownloadModel).filter(
+            and_(
+                DownloadModel.storage_type == 'temporary',
+                DownloadModel.created_at < cutoff_date
+            )
+        ).all()
+        
+        deleted_count = 0
+        for download in old_temporary_downloads:
+            try:
+                # Deletar arquivo físico se existir
+                if download.file_path and os.path.exists(download.file_path):
+                    os.remove(download.file_path)
+                    logger.info("Arquivo de download temporário deletado", 
+                               file_path=download.file_path)
+                
+                # Deletar registro do banco
+                db.delete(download)
+                deleted_count += 1
+                
+            except Exception as e:
+                logger.error("Erro ao deletar download temporário", 
+                           download_id=str(download.id),
+                           error=str(e))
+        
+        db.commit()
+        
+        logger.info("Limpeza de downloads temporários concluída", 
+                   deleted_count=deleted_count)
+        
+        return {
+            "status": "completed",
+            "deleted_count": deleted_count
+        }
+        
+    except Exception as e:
+        db.rollback()
+        logger.error("Erro na limpeza de downloads temporários", error=str(e))
+        raise
+    
+    finally:
+        db.close()
 
 
 @celery_app.task(name="cleanup_orphaned_files")

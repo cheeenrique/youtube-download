@@ -2,9 +2,16 @@ from datetime import datetime
 from typing import Optional, List
 from uuid import UUID
 from pydantic import BaseModel, HttpUrl, Field
+from enum import Enum
 
 from app.domain.value_objects.download_quality import DownloadQuality
 from app.domain.value_objects.download_status import DownloadStatus
+
+
+class StorageType(str, Enum):
+    """Tipo de armazenamento do download"""
+    TEMPORARY = "temporary"
+    PERMANENT = "permanent"
 
 
 class DownloadCreateRequest(BaseModel):
@@ -12,6 +19,7 @@ class DownloadCreateRequest(BaseModel):
     url: HttpUrl = Field(..., description="URL do vídeo para download")
     quality: DownloadQuality = Field(default=DownloadQuality.BEST, description="Qualidade do download")
     upload_to_drive: bool = Field(default=False, description="Se deve fazer upload para o Google Drive")
+    storage_type: StorageType = Field(default=StorageType.TEMPORARY, description="Tipo de armazenamento: temporary (será limpo) ou permanent")
 
 
 class DownloadBatchRequest(BaseModel):
@@ -19,11 +27,13 @@ class DownloadBatchRequest(BaseModel):
     urls: List[HttpUrl] = Field(..., description="Lista de URLs para download", min_items=1, max_items=10)
     quality: DownloadQuality = Field(default=DownloadQuality.BEST, description="Qualidade dos downloads")
     upload_to_drive: bool = Field(default=False, description="Se deve fazer upload para o Google Drive")
+    storage_type: StorageType = Field(default=StorageType.TEMPORARY, description="Tipo de armazenamento: temporary (será limpo) ou permanent")
 
 
 class DownloadResponse(BaseModel):
     """Schema para resposta de download"""
     id: UUID
+    user_id: Optional[UUID] = None
     url: str
     title: Optional[str] = None
     description: Optional[str] = None
@@ -44,6 +54,7 @@ class DownloadResponse(BaseModel):
     last_accessed: Optional[datetime] = None
     uploaded_to_drive: bool
     drive_file_id: Optional[str] = None
+    storage_type: str
 
     class Config:
         from_attributes = True
@@ -53,6 +64,7 @@ class DownloadResponse(BaseModel):
         """Criar schema a partir da entidade Download"""
         return cls(
             id=download.id,
+            user_id=download.user_id,
             url=download.url,
             title=download.title,
             description=download.description,
@@ -72,7 +84,8 @@ class DownloadResponse(BaseModel):
             downloads_count=download.downloads_count or 0,
             last_accessed=download.last_accessed,
             uploaded_to_drive=download.uploaded_to_drive or False,
-            drive_file_id=download.drive_file_id
+            drive_file_id=download.drive_file_id,
+            storage_type=download.storage_type
         )
 
 

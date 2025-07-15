@@ -6,9 +6,9 @@ from sqlalchemy import func, desc, and_, or_, text
 import json
 
 from app.domain.repositories.download_log_repository import DownloadLogRepository
-from app.domain.entities.download_log import DownloadLog
-from app.infrastructure.database.models import DownloadLog
-from app.infrastructure.database.connection import SessionLocal
+from app.domain.entities.download_log import DownloadLog as DownloadLogEntity
+from app.infrastructure.database.models import DownloadLog as DownloadLogModel
+# from app.infrastructure.database.connection import SessionLocal  # Não usar como dependência FastAPI
 
 
 class DownloadLogRepositoryImpl(DownloadLogRepository):
@@ -17,9 +17,9 @@ class DownloadLogRepositoryImpl(DownloadLogRepository):
     def __init__(self, db_session: Session):
         self.db_session = db_session
     
-    async def create(self, download_log: DownloadLog) -> DownloadLog:
+    async def create(self, download_log: DownloadLogEntity) -> DownloadLogEntity:
         """Cria um novo log de download"""
-        db_log = DownloadLog(
+        db_log = DownloadLogModel(
             id=download_log.id,
             download_id=download_log.download_id,
             user_id=download_log.user_id,
@@ -66,43 +66,43 @@ class DownloadLogRepositoryImpl(DownloadLogRepository):
         
         return self._to_entity(db_log)
     
-    async def get_by_id(self, log_id: UUID) -> Optional[DownloadLog]:
+    async def get_by_id(self, log_id: UUID) -> Optional[DownloadLogEntity]:
         """Busca um log por ID"""
-        db_log = self.db_session.query(DownloadLog).filter(
-            DownloadLog.id == log_id
+        db_log = self.db_session.query(DownloadLogModel).filter(
+            DownloadLogModel.id == log_id
         ).first()
         
         return self._to_entity(db_log) if db_log else None
     
-    async def get_by_download_id(self, download_id: UUID) -> List[DownloadLog]:
+    async def get_by_download_id(self, download_id: UUID) -> List[DownloadLogEntity]:
         """Busca todos os logs de um download específico"""
-        db_logs = self.db_session.query(DownloadLog).filter(
-            DownloadLog.download_id == download_id
-        ).order_by(desc(DownloadLog.created_at)).all()
+        db_logs = self.db_session.query(DownloadLogModel).filter(
+            DownloadLogModel.download_id == download_id
+        ).order_by(desc(DownloadLogModel.created_at)).all()
         
         return [self._to_entity(log) for log in db_logs]
     
-    async def get_by_user_id(self, user_id: str, limit: int = 100) -> List[DownloadLog]:
+    async def get_by_user_id(self, user_id: str, limit: int = 100) -> List[DownloadLogEntity]:
         """Busca logs de um usuário específico"""
-        db_logs = self.db_session.query(DownloadLog).filter(
-            DownloadLog.user_id == user_id
-        ).order_by(desc(DownloadLog.created_at)).limit(limit).all()
+        db_logs = self.db_session.query(DownloadLogModel).filter(
+            DownloadLogModel.user_id == user_id
+        ).order_by(desc(DownloadLogModel.created_at)).limit(limit).all()
         
         return [self._to_entity(log) for log in db_logs]
     
-    async def get_by_session_id(self, session_id: str) -> List[DownloadLog]:
+    async def get_by_session_id(self, session_id: str) -> List[DownloadLogEntity]:
         """Busca logs de uma sessão específica"""
-        db_logs = self.db_session.query(DownloadLog).filter(
-            DownloadLog.session_id == session_id
-        ).order_by(desc(DownloadLog.created_at)).all()
+        db_logs = self.db_session.query(DownloadLogModel).filter(
+            DownloadLogModel.session_id == session_id
+        ).order_by(desc(DownloadLogModel.created_at)).all()
         
         return [self._to_entity(log) for log in db_logs]
     
-    async def get_by_status(self, status: str, limit: int = 100) -> List[DownloadLog]:
+    async def get_by_status(self, status: str, limit: int = 100) -> List[DownloadLogEntity]:
         """Busca logs por status"""
-        db_logs = self.db_session.query(DownloadLog).filter(
-            DownloadLog.status == status
-        ).order_by(desc(DownloadLog.created_at)).limit(limit).all()
+        db_logs = self.db_session.query(DownloadLogModel).filter(
+            DownloadLogModel.status == status
+        ).order_by(desc(DownloadLogModel.created_at)).limit(limit).all()
         
         return [self._to_entity(log) for log in db_logs]
     
@@ -111,40 +111,40 @@ class DownloadLogRepositoryImpl(DownloadLogRepository):
         start_date: datetime, 
         end_date: datetime,
         limit: int = 1000
-    ) -> List[DownloadLog]:
+    ) -> List[DownloadLogEntity]:
         """Busca logs em um intervalo de datas"""
-        db_logs = self.db_session.query(DownloadLog).filter(
+        db_logs = self.db_session.query(DownloadLogModel).filter(
             and_(
-                DownloadLog.created_at >= start_date,
-                DownloadLog.created_at <= end_date
+                DownloadLogModel.created_at >= start_date,
+                DownloadLogModel.created_at <= end_date
             )
-        ).order_by(desc(DownloadLog.created_at)).limit(limit).all()
+        ).order_by(desc(DownloadLogModel.created_at)).limit(limit).all()
         
         return [self._to_entity(log) for log in db_logs]
     
-    async def get_failed_downloads(self, limit: int = 100) -> List[DownloadLog]:
+    async def get_failed_downloads(self, limit: int = 100) -> List[DownloadLogEntity]:
         """Busca downloads que falharam"""
-        db_logs = self.db_session.query(DownloadLog).filter(
+        db_logs = self.db_session.query(DownloadLogModel).filter(
             or_(
-                DownloadLog.status.in_(["failed", "error"]),
-                DownloadLog.error_message.isnot(None)
+                DownloadLogModel.status.in_(["failed", "error"]),
+                DownloadLogModel.error_message.isnot(None)
             )
-        ).order_by(desc(DownloadLog.created_at)).limit(limit).all()
+        ).order_by(desc(DownloadLogModel.created_at)).limit(limit).all()
         
         return [self._to_entity(log) for log in db_logs]
     
-    async def get_successful_downloads(self, limit: int = 100) -> List[DownloadLog]:
+    async def get_successful_downloads(self, limit: int = 100) -> List[DownloadLogEntity]:
         """Busca downloads bem-sucedidos"""
-        db_logs = self.db_session.query(DownloadLog).filter(
-            DownloadLog.status == "completed"
-        ).order_by(desc(DownloadLog.created_at)).limit(limit).all()
+        db_logs = self.db_session.query(DownloadLogModel).filter(
+            DownloadLogModel.status == "completed"
+        ).order_by(desc(DownloadLogModel.created_at)).limit(limit).all()
         
         return [self._to_entity(log) for log in db_logs]
     
-    async def update(self, download_log: DownloadLog) -> DownloadLog:
+    async def update(self, download_log: DownloadLogEntity) -> DownloadLogEntity:
         """Atualiza um log existente"""
-        db_log = self.db_session.query(DownloadLog).filter(
-            DownloadLog.id == download_log.id
+        db_log = self.db_session.query(DownloadLogModel).filter(
+            DownloadLogModel.id == download_log.id
         ).first()
         
         if not db_log:
@@ -163,8 +163,8 @@ class DownloadLogRepositoryImpl(DownloadLogRepository):
     
     async def delete(self, log_id: UUID) -> bool:
         """Remove um log"""
-        db_log = self.db_session.query(DownloadLog).filter(
-            DownloadLog.id == log_id
+        db_log = self.db_session.query(DownloadLogModel).filter(
+            DownloadLogModel.id == log_id
         ).first()
         
         if db_log:
@@ -178,8 +178,8 @@ class DownloadLogRepositoryImpl(DownloadLogRepository):
         """Remove logs antigos (mais de X dias)"""
         cutoff_date = datetime.now(timezone.utc) - timedelta(days=days)
         
-        deleted_count = self.db_session.query(DownloadLog).filter(
-            DownloadLog.created_at < cutoff_date
+        deleted_count = self.db_session.query(DownloadLogModel).filter(
+            DownloadLogModel.created_at < cutoff_date
         ).delete()
         
         self.db_session.commit()
@@ -192,13 +192,13 @@ class DownloadLogRepositoryImpl(DownloadLogRepository):
         end_date: Optional[datetime] = None
     ) -> Dict[str, Any]:
         """Retorna estatísticas gerais de downloads"""
-        query = self.db_session.query(DownloadLog)
+        query = self.db_session.query(DownloadLogModel)
         
         if start_date and end_date:
             query = query.filter(
                 and_(
-                    DownloadLog.created_at >= start_date,
-                    DownloadLog.created_at <= end_date
+                    DownloadLogModel.created_at >= start_date,
+                    DownloadLogModel.created_at <= end_date
                 )
             )
         
@@ -206,16 +206,16 @@ class DownloadLogRepositoryImpl(DownloadLogRepository):
         
         # Downloads por status
         status_stats = self.db_session.query(
-            DownloadLog.status,
-            func.count(DownloadLog.id).label('count')
-        ).group_by(DownloadLog.status).all()
+            DownloadLogModel.status,
+            func.count(DownloadLogModel.id).label('count')
+        ).group_by(DownloadLogModel.status).all()
         
         # Downloads por dia
         daily_stats = self.db_session.query(
-            func.date(DownloadLog.created_at).label('date'),
-            func.count(DownloadLog.id).label('count')
-        ).group_by(func.date(DownloadLog.created_at)).order_by(
-            func.date(DownloadLog.created_at)
+            func.date(DownloadLogModel.created_at).label('date'),
+            func.count(DownloadLogModel.id).label('count')
+        ).group_by(func.date(DownloadLogModel.created_at)).order_by(
+            func.date(DownloadLogModel.created_at)
         ).all()
         
         return {
@@ -234,25 +234,25 @@ class DownloadLogRepositoryImpl(DownloadLogRepository):
         end_date: Optional[datetime] = None
     ) -> Dict[str, Any]:
         """Retorna métricas de performance"""
-        query = self.db_session.query(DownloadLog).filter(
-            DownloadLog.download_duration.isnot(None)
+        query = self.db_session.query(DownloadLogModel).filter(
+            DownloadLogModel.download_duration.isnot(None)
         )
         
         if start_date and end_date:
             query = query.filter(
                 and_(
-                    DownloadLog.created_at >= start_date,
-                    DownloadLog.created_at <= end_date
+                    DownloadLogModel.created_at >= start_date,
+                    DownloadLogModel.created_at <= end_date
                 )
             )
         
         # Estatísticas de duração
         duration_stats = query.with_entities(
-            func.avg(DownloadLog.download_duration).label('avg_duration'),
-            func.min(DownloadLog.download_duration).label('min_duration'),
-            func.max(DownloadLog.download_duration).label('max_duration'),
-            func.avg(DownloadLog.download_speed).label('avg_speed'),
-            func.avg(DownloadLog.file_size_downloaded).label('avg_file_size')
+            func.avg(DownloadLogModel.download_duration).label('avg_duration'),
+            func.min(DownloadLogModel.download_duration).label('min_duration'),
+            func.max(DownloadLogModel.download_duration).label('max_duration'),
+            func.avg(DownloadLogModel.download_speed).label('avg_speed'),
+            func.avg(DownloadLogModel.file_size_downloaded).label('avg_file_size')
         ).first()
         
         return {
@@ -273,18 +273,18 @@ class DownloadLogRepositoryImpl(DownloadLogRepository):
         end_date: Optional[datetime] = None
     ) -> Dict[str, Any]:
         """Retorna análise de erros"""
-        query = self.db_session.query(DownloadLog).filter(
+        query = self.db_session.query(DownloadLogModel).filter(
             or_(
-                DownloadLog.status.in_(["failed", "error"]),
-                DownloadLog.error_message.isnot(None)
+                DownloadLogModel.status.in_(["failed", "error"]),
+                DownloadLogModel.error_message.isnot(None)
             )
         )
         
         if start_date and end_date:
             query = query.filter(
                 and_(
-                    DownloadLog.created_at >= start_date,
-                    DownloadLog.created_at <= end_date
+                    DownloadLogModel.created_at >= start_date,
+                    DownloadLogModel.created_at <= end_date
                 )
             )
         
@@ -292,16 +292,16 @@ class DownloadLogRepositoryImpl(DownloadLogRepository):
         
         # Erros por código
         error_codes = query.with_entities(
-            DownloadLog.error_code,
-            func.count(DownloadLog.id).label('count')
-        ).group_by(DownloadLog.error_code).all()
+            DownloadLogModel.error_code,
+            func.count(DownloadLogModel.id).label('count')
+        ).group_by(DownloadLogModel.error_code).all()
         
         # Erros por dia
         daily_errors = query.with_entities(
-            func.date(DownloadLog.created_at).label('date'),
-            func.count(DownloadLog.id).label('count')
-        ).group_by(func.date(DownloadLog.created_at)).order_by(
-            func.date(DownloadLog.created_at)
+            func.date(DownloadLogModel.created_at).label('date'),
+            func.count(DownloadLogModel.id).label('count')
+        ).group_by(func.date(DownloadLogModel.created_at)).order_by(
+            func.date(DownloadLogModel.created_at)
         ).all()
         
         return {
@@ -321,26 +321,26 @@ class DownloadLogRepositoryImpl(DownloadLogRepository):
         end_date: Optional[datetime] = None
     ) -> Dict[str, Any]:
         """Retorna atividade do usuário"""
-        query = self.db_session.query(DownloadLog)
+        query = self.db_session.query(DownloadLogModel)
         
         if user_id:
-            query = query.filter(DownloadLog.user_id == user_id)
+            query = query.filter(DownloadLogModel.user_id == user_id)
         
         if start_date and end_date:
             query = query.filter(
                 and_(
-                    DownloadLog.created_at >= start_date,
-                    DownloadLog.created_at <= end_date
+                    DownloadLogModel.created_at >= start_date,
+                    DownloadLogModel.created_at <= end_date
                 )
             )
         
         # Usuários mais ativos
         active_users = query.with_entities(
-            DownloadLog.user_id,
-            func.count(DownloadLog.id).label('download_count'),
-            func.sum(DownloadLog.file_size_downloaded).label('total_size')
-        ).group_by(DownloadLog.user_id).order_by(
-            desc(func.count(DownloadLog.id))
+            DownloadLogModel.user_id,
+            func.count(DownloadLogModel.id).label('download_count'),
+            func.sum(DownloadLogModel.file_size_downloaded).label('total_size')
+        ).group_by(DownloadLogModel.user_id).order_by(
+            desc(func.count(DownloadLogModel.id))
         ).limit(10).all()
         
         return {
@@ -365,25 +365,25 @@ class DownloadLogRepositoryImpl(DownloadLogRepository):
         end_date: Optional[datetime] = None
     ) -> List[Dict[str, Any]]:
         """Retorna vídeos mais populares"""
-        query = self.db_session.query(DownloadLog)
+        query = self.db_session.query(DownloadLogModel)
         
         if start_date and end_date:
             query = query.filter(
                 and_(
-                    DownloadLog.created_at >= start_date,
-                    DownloadLog.created_at <= end_date
+                    DownloadLogModel.created_at >= start_date,
+                    DownloadLogModel.created_at <= end_date
                 )
             )
         
         popular_videos = query.with_entities(
-            DownloadLog.video_url,
-            DownloadLog.video_title,
-            func.count(DownloadLog.id).label('download_count'),
-            func.avg(DownloadLog.download_duration).label('avg_duration')
+            DownloadLogModel.video_url,
+            DownloadLogModel.video_title,
+            func.count(DownloadLogModel.id).label('download_count'),
+            func.avg(DownloadLogModel.download_duration).label('avg_duration')
         ).group_by(
-            DownloadLog.video_url,
-            DownloadLog.video_title
-        ).order_by(desc(func.count(DownloadLog.id))).limit(limit).all()
+            DownloadLogModel.video_url,
+            DownloadLogModel.video_title
+        ).order_by(desc(func.count(DownloadLogModel.id))).limit(limit).all()
         
         return [
             {
@@ -401,20 +401,20 @@ class DownloadLogRepositoryImpl(DownloadLogRepository):
         end_date: Optional[datetime] = None
     ) -> Dict[str, int]:
         """Retorna preferências de qualidade"""
-        query = self.db_session.query(DownloadLog)
+        query = self.db_session.query(DownloadLogModel)
         
         if start_date and end_date:
             query = query.filter(
                 and_(
-                    DownloadLog.created_at >= start_date,
-                    DownloadLog.created_at <= end_date
+                    DownloadLogModel.created_at >= start_date,
+                    DownloadLogModel.created_at <= end_date
                 )
             )
         
         quality_stats = query.with_entities(
-            DownloadLog.video_quality,
-            func.count(DownloadLog.id).label('count')
-        ).group_by(DownloadLog.video_quality).all()
+            DownloadLogModel.video_quality,
+            func.count(DownloadLogModel.id).label('count')
+        ).group_by(DownloadLogModel.video_quality).all()
         
         return {quality: count for quality, count in quality_stats}
     
@@ -424,20 +424,20 @@ class DownloadLogRepositoryImpl(DownloadLogRepository):
         end_date: Optional[datetime] = None
     ) -> Dict[str, int]:
         """Retorna uso de formatos"""
-        query = self.db_session.query(DownloadLog)
+        query = self.db_session.query(DownloadLogModel)
         
         if start_date and end_date:
             query = query.filter(
                 and_(
-                    DownloadLog.created_at >= start_date,
-                    DownloadLog.created_at <= end_date
+                    DownloadLogModel.created_at >= start_date,
+                    DownloadLogModel.created_at <= end_date
                 )
             )
         
         format_stats = query.with_entities(
-            DownloadLog.video_format,
-            func.count(DownloadLog.id).label('count')
-        ).group_by(DownloadLog.video_format).all()
+            DownloadLogModel.video_format,
+            func.count(DownloadLogModel.id).label('count')
+        ).group_by(DownloadLogModel.video_format).all()
         
         return {format_type: count for format_type, count in format_stats}
     
@@ -447,17 +447,17 @@ class DownloadLogRepositoryImpl(DownloadLogRepository):
         end_date: Optional[datetime] = None
     ) -> Dict[str, Any]:
         """Retorna estatísticas do Google Drive"""
-        query = self.db_session.query(DownloadLog)
+        query = self.db_session.query(DownloadLogModel)
         
         if start_date and end_date:
             query = query.filter(
                 and_(
-                    DownloadLog.created_at >= start_date,
-                    DownloadLog.created_at <= end_date
+                    DownloadLogModel.created_at >= start_date,
+                    DownloadLogModel.created_at <= end_date
                 )
             )
         
-        total_uploads = query.filter(DownloadLog.google_drive_uploaded == True).count()
+        total_uploads = query.filter(DownloadLogModel.google_drive_uploaded == True).count()
         total_downloads = query.count()
         
         return {
@@ -476,19 +476,19 @@ class DownloadLogRepositoryImpl(DownloadLogRepository):
         end_date: Optional[datetime] = None
     ) -> Dict[str, Any]:
         """Retorna estatísticas de URLs temporárias"""
-        query = self.db_session.query(DownloadLog)
+        query = self.db_session.query(DownloadLogModel)
         
         if start_date and end_date:
             query = query.filter(
                 and_(
-                    DownloadLog.created_at >= start_date,
-                    DownloadLog.created_at <= end_date
+                    DownloadLogModel.created_at >= start_date,
+                    DownloadLogModel.created_at <= end_date
                 )
             )
         
-        total_temp_urls = query.filter(DownloadLog.temporary_url_created == True).count()
+        total_temp_urls = query.filter(DownloadLogModel.temporary_url_created == True).count()
         total_accesses = query.with_entities(
-            func.sum(DownloadLog.temporary_url_access_count)
+            func.sum(DownloadLogModel.temporary_url_access_count)
         ).scalar() or 0
         
         return {
@@ -507,24 +507,24 @@ class DownloadLogRepositoryImpl(DownloadLogRepository):
         end_date: Optional[datetime] = None
     ) -> Dict[str, Any]:
         """Retorna métricas do sistema"""
-        query = self.db_session.query(DownloadLog)
+        query = self.db_session.query(DownloadLogModel)
         
         if start_date and end_date:
             query = query.filter(
                 and_(
-                    DownloadLog.created_at >= start_date,
-                    DownloadLog.created_at <= end_date
+                    DownloadLogModel.created_at >= start_date,
+                    DownloadLogModel.created_at <= end_date
                 )
             )
         
         # Métricas de sistema
         system_stats = query.with_entities(
-            func.avg(DownloadLog.memory_usage).label('avg_memory'),
-            func.avg(DownloadLog.cpu_usage).label('avg_cpu'),
-            func.avg(DownloadLog.disk_usage).label('avg_disk'),
-            func.max(DownloadLog.memory_usage).label('max_memory'),
-            func.max(DownloadLog.cpu_usage).label('max_cpu'),
-            func.max(DownloadLog.disk_usage).label('max_disk')
+            func.avg(DownloadLogModel.memory_usage).label('avg_memory'),
+            func.avg(DownloadLogModel.cpu_usage).label('avg_cpu'),
+            func.avg(DownloadLogModel.disk_usage).label('avg_disk'),
+            func.max(DownloadLogModel.memory_usage).label('max_memory'),
+            func.max(DownloadLogModel.cpu_usage).label('max_cpu'),
+            func.max(DownloadLogModel.disk_usage).label('max_disk')
         ).first()
         
         return {
@@ -544,16 +544,16 @@ class DownloadLogRepositoryImpl(DownloadLogRepository):
         self,
         query: str,
         limit: int = 100
-    ) -> List[DownloadLog]:
+    ) -> List[DownloadLogEntity]:
         """Busca logs por texto"""
-        db_logs = self.db_session.query(DownloadLog).filter(
+        db_logs = self.db_session.query(DownloadLogModel).filter(
             or_(
-                DownloadLog.video_title.ilike(f"%{query}%"),
-                DownloadLog.video_url.ilike(f"%{query}%"),
-                DownloadLog.error_message.ilike(f"%{query}%"),
-                DownloadLog.user_id.ilike(f"%{query}%")
+                DownloadLogModel.video_title.ilike(f"%{query}%"),
+                DownloadLogModel.video_url.ilike(f"%{query}%"),
+                DownloadLogModel.error_message.ilike(f"%{query}%"),
+                DownloadLogModel.user_id.ilike(f"%{query}%")
             )
-        ).order_by(desc(DownloadLog.created_at)).limit(limit).all()
+        ).order_by(desc(DownloadLogModel.created_at)).limit(limit).all()
         
         return [self._to_entity(log) for log in db_logs]
     
@@ -564,34 +564,34 @@ class DownloadLogRepositoryImpl(DownloadLogRepository):
         start_date: Optional[datetime] = None,
         end_date: Optional[datetime] = None,
         limit: int = 1000
-    ) -> List[DownloadLog]:
+    ) -> List[DownloadLogEntity]:
         """Retorna trilha de auditoria"""
-        query = self.db_session.query(DownloadLog)
+        query = self.db_session.query(DownloadLogModel)
         
         if download_id:
-            query = query.filter(DownloadLog.download_id == download_id)
+            query = query.filter(DownloadLogModel.download_id == download_id)
         
         if user_id:
-            query = query.filter(DownloadLog.user_id == user_id)
+            query = query.filter(DownloadLogModel.user_id == user_id)
         
         if start_date and end_date:
             query = query.filter(
                 and_(
-                    DownloadLog.created_at >= start_date,
-                    DownloadLog.created_at <= end_date
+                    DownloadLogModel.created_at >= start_date,
+                    DownloadLogModel.created_at <= end_date
                 )
             )
         
-        db_logs = query.order_by(desc(DownloadLog.created_at)).limit(limit).all()
+        db_logs = query.order_by(desc(DownloadLogModel.created_at)).limit(limit).all()
         
         return [self._to_entity(log) for log in db_logs]
     
-    def _to_entity(self, db_log: DownloadLog) -> DownloadLog:
+    def _to_entity(self, db_log: DownloadLogModel) -> DownloadLogEntity:
         """Converte modelo SQLAlchemy para entidade"""
         if not db_log:
             return None
         
-        return DownloadLog(
+        return DownloadLogEntity(
             id=db_log.id,
             download_id=db_log.download_id,
             user_id=db_log.user_id,

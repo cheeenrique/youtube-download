@@ -10,8 +10,8 @@ logger = structlog.get_logger()
 # Configurar Celery
 celery_app = Celery(
     "youtube_download_api",
-    broker=settings.database_url,  # Usar PostgreSQL como broker
-    backend=settings.database_url,  # Usar PostgreSQL como backend
+    broker="sqla+postgresql://youtube_user:youtube_pass@db:5432/youtube_downloads",
+    backend="db+postgresql://youtube_user:youtube_pass@db:5432/youtube_downloads",
     include=[
         "app.infrastructure.celery.tasks.download_tasks",
         "app.infrastructure.celery.tasks.cleanup_tasks",
@@ -75,6 +75,8 @@ celery_app.conf.update(
     
     # Configurações específicas para PostgreSQL como broker
     worker_disable_rate_limits=True,
+    
+
     
     # Configurações de logging
     worker_log_format="[%(asctime)s: %(levelname)s/%(processName)s] %(message)s",
@@ -141,3 +143,15 @@ def handle_task_retry(sender=None, request=None, reason=None, einfo=None, **kwar
     logger.warning("Task retry", 
                    task_id=request.id if request else None,
                    reason=reason) 
+
+# Agendamento automático: limpeza de arquivos temporários a cada 1 hora
+celery_app.conf.beat_schedule = {
+    "cleanup-temporary-files-every-hour": {
+        "task": "cleanup_expired_files_task",
+        "schedule": crontab(minute=0, hour="*"),
+    },
+    "cleanup-temporary-downloads-every-hour": {
+        "task": "cleanup_temporary_downloads_task",
+        "schedule": crontab(minute=0, hour="*"),
+    },
+} 

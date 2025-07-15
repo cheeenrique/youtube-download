@@ -4,13 +4,13 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: youtube-download-api
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
     ports:
       - "8000:8000"
     environment:
       - DATABASE_URL=postgresql://youtube_user:youtube_pass@db:5432/youtube_downloads
-      - REDIS_URL=redis://redis:6379
-      - CELERY_BROKER_URL=redis://redis:6379/0
-      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - CELERY_BROKER_URL=sqla+postgresql://youtube_user:youtube_pass@db:5432/youtube_downloads
+      - CELERY_RESULT_BACKEND=db+postgresql://youtube_user:youtube_pass@db:5432/youtube_downloads
       - API_V1_STR=/api/v1
       - PROJECT_NAME=YouTube Download API
       - DEBUG=false
@@ -24,14 +24,13 @@ services:
       - LOG_LEVEL=INFO
       - LOG_FORMAT=json
     volumes:
+      - ./app:/app/app
       - ./videos:/app/videos
       - ./logs:/app/logs
       - ./alembic.ini:/app/alembic.ini
       - ./alembic:/app/alembic
     depends_on:
       db:
-        condition: service_healthy
-      redis:
         condition: service_healthy
     restart: unless-stopped
     networks:
@@ -66,23 +65,7 @@ services:
       retries: 5
       start_period: 30s
 
-  redis:
-    image: redis:7-alpine
-    container_name: youtube-download-redis
-    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
-    restart: unless-stopped
-    networks:
-      - youtube-network
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
+
 
   celery:
     build: 
@@ -92,9 +75,8 @@ services:
     command: celery -A app.infrastructure.celery.celery_app worker --loglevel=info --concurrency=1 --max-tasks-per-child=1000
     environment:
       - DATABASE_URL=postgresql://youtube_user:youtube_pass@db:5432/youtube_downloads
-      - REDIS_URL=redis://redis:6379
-      - CELERY_BROKER_URL=redis://redis:6379/0
-      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - CELERY_BROKER_URL=sqla+postgresql://youtube_user:youtube_pass@db:5432/youtube_downloads
+      - CELERY_RESULT_BACKEND=db+postgresql://youtube_user:youtube_pass@db:5432/youtube_downloads
       - VIDEOS_DIR=/app/videos
       - MAX_CONCURRENT_DOWNLOADS=1
       - LOG_LEVEL=INFO
@@ -105,8 +87,6 @@ services:
       - ./logs:/app/logs
     depends_on:
       db:
-        condition: service_healthy
-      redis:
         condition: service_healthy
     restart: unless-stopped
     networks:
@@ -126,9 +106,8 @@ services:
     command: celery -A app.infrastructure.celery.celery_app beat --loglevel=info
     environment:
       - DATABASE_URL=postgresql://youtube_user:youtube_pass@db:5432/youtube_downloads
-      - REDIS_URL=redis://redis:6379
-      - CELERY_BROKER_URL=redis://redis:6379/0
-      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - CELERY_BROKER_URL=sqla+postgresql://youtube_user:youtube_pass@db:5432/youtube_downloads
+      - CELERY_RESULT_BACKEND=db+postgresql://youtube_user:youtube_pass@db:5432/youtube_downloads
       - VIDEOS_DIR=/app/videos
       - LOG_LEVEL=INFO
       - LOG_FORMAT=json
@@ -138,8 +117,6 @@ services:
       - ./logs:/app/logs
     depends_on:
       db:
-        condition: service_healthy
-      redis:
         condition: service_healthy
     restart: unless-stopped
     networks:
@@ -170,8 +147,6 @@ services:
 
 volumes:
   postgres_data:
-    driver: local
-  redis_data:
     driver: local
 
 networks:

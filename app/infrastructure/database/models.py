@@ -15,6 +15,7 @@ class DownloadModel(Base):
     __tablename__ = "downloads"
     
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True, index=True)
     url = Column(String(500), nullable=False, index=True)
     status = Column(String(50), nullable=False, index=True)
     progress = Column(Float, default=0.0)
@@ -33,8 +34,10 @@ class DownloadModel(Base):
     completed_at = Column(DateTime)
     download_count = Column(Integer, default=0)
     last_accessed = Column(DateTime)
+    storage_type = Column(String(20), default="temporary", index=True)
     
     # Relacionamentos
+    user = relationship("UserModel", back_populates="downloads")
     temporary_files = relationship("TemporaryFileModel", back_populates="download", cascade="all, delete-orphan")
     logs = relationship("DownloadLog", back_populates="download", cascade="all, delete-orphan")
     
@@ -42,6 +45,7 @@ class DownloadModel(Base):
     __table_args__ = (
         Index('idx_downloads_status_created', 'status', 'created_at'),
         Index('idx_downloads_url_status', 'url', 'status'),
+        Index('idx_downloads_user_status', 'user_id', 'status'),
     )
 
 
@@ -225,4 +229,7 @@ class UserModel(Base):
     locked_until = Column(DateTime)
     preferences = Column(JSON, default={})
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc)) 
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    
+    # Relacionamentos
+    downloads = relationship("DownloadModel", back_populates="user", cascade="all, delete-orphan") 
