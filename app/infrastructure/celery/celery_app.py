@@ -32,8 +32,10 @@ celery_app.conf.update(
     timezone="UTC",
     enable_utc=True,
     
-    # Configurações de worker
+    # Configurações de worker (otimizadas para Railway)
     worker_prefetch_multiplier=1,  # Processa uma task por vez
+    worker_concurrency=1,  # Apenas 1 worker para economizar recursos
+    worker_max_tasks_per_child=100,  # Reinicia worker após 100 tasks
     task_acks_late=True,
     task_reject_on_worker_lost=True,
     
@@ -44,20 +46,20 @@ celery_app.conf.update(
         "app.infrastructure.celery.tasks.cleanup_tasks.*": {"queue": "cleanup"},
     },
     
-    # Configurações de retry
+    # Configurações de retry (reduzidas)
     task_annotations={
         "*": {
             "retry_backoff": True,
-            "retry_backoff_max": 600,  # 10 minutos
-            "max_retries": 3,
+            "retry_backoff_max": 300,  # 5 minutos (reduzido)
+            "max_retries": 2,  # Reduzido de 3 para 2
         }
     },
     
-    # Configurações de beat (tarefas agendadas)
+    # Configurações de beat (tarefas agendadas - reduzidas)
     beat_schedule={
         "cleanup-expired-files": {
             "task": "app.infrastructure.celery.tasks.cleanup_tasks.cleanup_expired_files",
-            "schedule": crontab(minute=0, hour="*/1"),  # A cada hora
+            "schedule": crontab(minute=0, hour="*/2"),  # A cada 2 horas (reduzido)
         },
         "cleanup-old-logs": {
             "task": "app.infrastructure.celery.tasks.cleanup_tasks.cleanup_old_logs",
@@ -65,18 +67,16 @@ celery_app.conf.update(
         },
         "update-download-stats": {
             "task": "app.infrastructure.celery.tasks.download_tasks.update_download_stats",
-            "schedule": crontab(minute="*/5"),  # A cada 5 minutos
+            "schedule": crontab(minute="*/10"),  # A cada 10 minutos (reduzido)
         },
     },
     
     # Configurações de resultado para PostgreSQL
-    result_expires=3600,  # 1 hora
+    result_expires=1800,  # 30 minutos (reduzido)
     result_persistent=True,
     
     # Configurações específicas para PostgreSQL como broker
     worker_disable_rate_limits=True,
-    
-
     
     # Configurações de logging
     worker_log_format="[%(asctime)s: %(levelname)s/%(processName)s] %(message)s",
@@ -144,14 +144,4 @@ def handle_task_retry(sender=None, request=None, reason=None, einfo=None, **kwar
                    task_id=request.id if request else None,
                    reason=reason) 
 
-# Agendamento automático: limpeza de arquivos temporários a cada 1 hora
-celery_app.conf.beat_schedule = {
-    "cleanup-temporary-files-every-hour": {
-        "task": "cleanup_expired_files_task",
-        "schedule": crontab(minute=0, hour="*"),
-    },
-    "cleanup-temporary-downloads-every-hour": {
-        "task": "cleanup_temporary_downloads_task",
-        "schedule": crontab(minute=0, hour="*"),
-    },
-} 
+# Configuração de beat já está definida acima 
