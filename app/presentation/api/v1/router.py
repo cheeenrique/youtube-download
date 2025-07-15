@@ -11,6 +11,7 @@ from .analytics import router as analytics_router
 from .optimization import router as optimization_router
 from .security import router as security_router
 from .monitoring import router as monitoring_router
+from .migrations import router as migrations_router
 
 # Aqui importaremos os routers específicos quando criarmos
 # from .queue import router as queue_router
@@ -28,6 +29,7 @@ api_router.include_router(analytics_router, tags=["Analytics & Reporting"])
 api_router.include_router(optimization_router, tags=["Otimização"])
 api_router.include_router(security_router, tags=["Security"])
 api_router.include_router(monitoring_router, tags=["Monitoring"])
+api_router.include_router(migrations_router, tags=["Migrations"])
 
 # Inclusão dos routers específicos (quando criarmos)
 # api_router.include_router(queue_router, prefix="/queue", tags=["queue"])
@@ -47,6 +49,11 @@ async def api_root():
             "optimization": "/optimization",
             "security": "/security",
             "monitoring": "/monitoring",
+            "migrations": {
+                "run": "/migrate",
+                "status": "/migrate/status",
+                "history": "/migrate/history"
+            },
             "websocket": {
                 "download_progress": "/ws/downloads/{download_id}",
                 "queue_status": "/ws/queue",
