@@ -54,7 +54,8 @@ async def api_root():
                 "stamp": "/migrate/stamp",
                 "force": "/migrate/force",
                 "status": "/migrate/status",
-                "history": "/migrate/history"
+                "history": "/migrate/history",
+                "test_celery": "/migrate/test-celery"
             },
             "websocket": {
                 "download_progress": "/ws/downloads/{download_id}",

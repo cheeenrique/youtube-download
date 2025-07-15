@@ -12,6 +12,17 @@ from app.infrastructure.file_storage.file_storage_service import FileStorageServ
 
 
 @shared_task
+def test_celery_connection():
+    """Tarefa de teste para verificar se o Celery está funcionando"""
+    return {
+        "success": True,
+        "message": "Celery está funcionando corretamente!",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "worker_id": test_celery_connection.request.id if hasattr(test_celery_connection, 'request') else "unknown"
+    }
+
+
+@shared_task
 def generate_daily_report():
     """Gera relatório diário de downloads"""
     try:

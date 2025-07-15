@@ -238,3 +238,28 @@ async def drop_all_tables():
         return {"success": True, "message": "Todas as tabelas foram deletadas com sucesso."}
     except Exception as e:
         return {"success": False, "error": str(e)} 
+
+
+@router.post("/migrate/test-celery", tags=["Migrations"])
+async def test_celery_queue():
+    """
+    Testa se as filas do Celery estão funcionando.
+    """
+    try:
+        from app.infrastructure.celery.celery_app import celery_app
+        
+        # Envia uma tarefa de teste
+        result = celery_app.send_task('app.infrastructure.celery.tasks.analytics_tasks.test_celery_connection')
+        
+        return {
+            "success": True,
+            "message": "Tarefa enviada para a fila com sucesso",
+            "task_id": result.id,
+            "status": "PENDING"
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e),
+            "message": "Erro ao enviar tarefa para a fila"
+        } 

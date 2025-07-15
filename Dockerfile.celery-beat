@@ -10,12 +10,8 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 # Instalar dependências do sistema
 RUN apt-get update && apt-get install -y \
-    ffmpeg \
-    curl \
-    wget \
-    gnupg \
-    && rm -rf /var/lib/apt/lists/* \
-    && apt-get clean
+    gcc \
+    && rm -rf /var/lib/apt/lists/*
 
 # Criar usuário não-root
 RUN groupadd -r appuser && useradd -r -g appuser appuser
@@ -28,9 +24,10 @@ COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copiar código da aplicação
-COPY app/ ./app/
-COPY alembic/ ./alembic/
-COPY alembic.ini ./
+COPY . .
+
+# Expor porta (opcional, para health checks)
+EXPOSE 8000
 
 # Criar diretórios necessários e definir permissões
 RUN mkdir -p /app/videos/permanent \
