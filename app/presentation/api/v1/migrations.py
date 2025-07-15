@@ -222,3 +222,19 @@ async def get_migration_history() -> Dict[str, Any]:
             status_code=500,
             detail=f"Erro interno: {str(e)}"
         ) 
+
+
+@router.post("/migrate/drop_all", tags=["Migrations"])
+async def drop_all_tables():
+    """
+    Destroi todas as tabelas do banco de dados. Use com EXTREMO cuidado!
+    """
+    try:
+        from app.infrastructure.database.connection import engine
+        import sqlalchemy
+        meta = sqlalchemy.MetaData()
+        meta.reflect(bind=engine)
+        meta.drop_all(bind=engine)
+        return {"success": True, "message": "Todas as tabelas foram deletadas com sucesso."}
+    except Exception as e:
+        return {"success": False, "error": str(e)} 
