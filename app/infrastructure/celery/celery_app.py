@@ -2,24 +2,32 @@ from celery import Celery
 from celery.schedules import crontab
 import structlog
 from celery.signals import task_failure, task_success, task_revoked, task_received, task_retry
+import os
 
 from app.shared.config import settings
 
 logger = structlog.get_logger()
 
+# Determinar broker baseado nas variáveis de ambiente
+def get_broker_url():
+    """Determina a URL do broker baseado nas variáveis de ambiente"""
+    # Usar CELERY_BROKER_URL se definido, senão usar SQLAlchemy
+    return os.getenv("CELERY_BROKER_URL", "sqla+postgresql://youtube_user:youtube_pass@localhost:5432/youtube_downloads")
+
+def get_result_backend():
+    """Determina o backend de resultados"""
+    # Usar CELERY_RESULT_BACKEND se definido, senão usar SQLAlchemy
+    return os.getenv("CELERY_RESULT_BACKEND", "db+postgresql://youtube_user:youtube_pass@localhost:5432/youtube_downloads")
+
 # Configurar Celery
 celery_app = Celery(
     "youtube_download_api",
-    broker="sqla+postgresql://youtube_user:youtube_pass@db:5432/youtube_downloads",
-    backend="db+postgresql://youtube_user:youtube_pass@db:5432/youtube_downloads",
+    broker=get_broker_url(),
+    backend=get_result_backend(),
     include=[
         "app.infrastructure.celery.tasks.download_tasks",
         "app.infrastructure.celery.tasks.cleanup_tasks",
-        "app.infrastructure.celery.tasks.analytics_tasks",
-        "app.infrastructure.celery.tasks.drive_tasks",
-        "app.infrastructure.celery.tasks.monitoring_tasks",
-        "app.infrastructure.celery.tasks.optimization_tasks",
-        "app.infrastructure.celery.tasks.security_tasks"
+        "app.infrastructure.celery.tasks.drive_tasks"
     ]
 )
 
@@ -32,64 +40,43 @@ celery_app.conf.update(
     timezone="UTC",
     enable_utc=True,
     
-    # Configurações de worker (otimizadas para Railway)
-    worker_prefetch_multiplier=1,  # Processa uma task por vez
-    worker_concurrency=1,  # Apenas 1 worker para economizar recursos
-    worker_max_tasks_per_child=100,  # Reinicia worker após 100 tasks
+    # Configurações de resultado
+    task_ignore_result=False,  # Habilitar resultados para produção
+    result_expires=1800,
+    result_persistent=True,
+    
+    # Configurações de worker
+    worker_prefetch_multiplier=1,
+    worker_concurrency=2,  # Aumentar para produção
     task_acks_late=True,
     task_reject_on_worker_lost=True,
     
     # Configurações de fila
     task_default_queue="downloads",
-    task_routes={
-        "app.infrastructure.celery.tasks.download_tasks.*": {"queue": "downloads"},
-        "app.infrastructure.celery.tasks.cleanup_tasks.*": {"queue": "cleanup"},
-    },
     
-    # Configurações de retry (reduzidas)
+    # Configurações de retry
     task_annotations={
         "*": {
             "retry_backoff": True,
-            "retry_backoff_max": 300,  # 5 minutos (reduzido)
-            "max_retries": 2,  # Reduzido de 3 para 2
+            "retry_backoff_max": 300,
+            "max_retries": 2,
         }
     },
     
-    # Configurações de beat (tarefas agendadas - reduzidas)
-    beat_schedule={
-        "cleanup-expired-files": {
-            "task": "app.infrastructure.celery.tasks.cleanup_tasks.cleanup_expired_files",
-            "schedule": crontab(minute=0, hour="*/2"),  # A cada 2 horas (reduzido)
-        },
-        "cleanup-old-logs": {
-            "task": "app.infrastructure.celery.tasks.cleanup_tasks.cleanup_old_logs",
-            "schedule": crontab(minute=0, hour=2, day_of_week=1),  # Segunda-feira às 2h
-        },
-        "update-download-stats": {
-            "task": "app.infrastructure.celery.tasks.download_tasks.update_download_stats",
-            "schedule": crontab(minute="*/10"),  # A cada 10 minutos (reduzido)
-        },
-    },
-    
-    # Configurações de resultado para PostgreSQL
-    result_expires=1800,  # 30 minutos (reduzido)
-    result_persistent=True,
-    
-    # Configurações específicas para PostgreSQL como broker
+    # Configurações específicas para desenvolvimento/produção
     worker_disable_rate_limits=True,
-    
-    # Configurações de logging
-    worker_log_format="[%(asctime)s: %(levelname)s/%(processName)s] %(message)s",
-    worker_task_log_format="[%(asctime)s: %(levelname)s/%(processName)s] [%(task_name)s(%(task_id)s)] %(message)s",
 )
 
 # Configurar logging do Celery
 @celery_app.on_after_configure.connect
 def setup_logging(sender, **kwargs):
     """Configura logging personalizado para o Celery"""
-    logger.info("Celery configurado com PostgreSQL como broker", 
-                broker="postgresql",
-                backend="postgresql")
+    broker_url = get_broker_url()
+    backend_url = get_result_backend()
+    
+    logger.info("Celery configurado", 
+                broker=broker_url,
+                backend=backend_url)
 
 
 @celery_app.task(bind=True)
@@ -145,3 +132,23 @@ def handle_task_retry(sender=None, request=None, reason=None, einfo=None, **kwar
                    reason=reason) 
 
 # Configuração de beat já está definida acima 
+
+def start_worker_in_process():
+    """Inicia o worker do Celery no processo atual (para desenvolvimento)"""
+    from celery.worker import WorkController
+    from celery.bin.worker import worker
+    
+    print("🚀 Iniciando worker do Celery no processo atual...")
+    
+    # Configurar worker
+    worker_instance = WorkController(
+        app=celery_app,
+        pool_cls='solo',
+        concurrency=1,
+        loglevel='INFO'
+    )
+    
+    # Iniciar worker
+    worker_instance.start()
+    
+    return worker_instance 

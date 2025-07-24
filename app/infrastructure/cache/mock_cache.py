@@ -1,6 +1,4 @@
-"""
-Mock cache para substituir Redis cache quando não disponível
-"""
+# Mock cache para funcionalidades básicas de cache
 import time
 from typing import Any, Dict, Optional, List
 import logging
@@ -9,12 +7,12 @@ logger = logging.getLogger(__name__)
 
 
 class MockCache:
-    """Mock cache que simula funcionalidades básicas do Redis"""
+    """Mock cache para funcionalidades básicas"""
     
     def __init__(self):
         self._cache = {}
         self._expiry = {}
-        logger.info("MockCache inicializado (substituindo Redis)")
+        logger.info("MockCache inicializado.")
     
     def get(self, key: str) -> Optional[Any]:
         """Obtém um valor do cache"""

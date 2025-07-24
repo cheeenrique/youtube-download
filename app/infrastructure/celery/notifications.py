@@ -2,8 +2,10 @@ from typing import Dict, Any, List, Optional
 import structlog
 from datetime import datetime
 from uuid import UUID
+import httpx
+import asyncio
 
-from app.infrastructure.websocket import manager
+from app.shared.config import settings
 from app.domain.entities.download import Download
 from app.domain.value_objects.download_status import DownloadStatus
 
@@ -13,11 +15,36 @@ logger = structlog.get_logger()
 class NotificationService:
     """Serviço para enviar notificações em tempo real via WebSocket"""
     
+    def __init__(self):
+        self.api_base_url = f"http://api:8000"
+    
+    async def _send_notification(self, notification_data: Dict[str, Any]):
+        """Envia notificação via HTTP para o endpoint do WebSocket"""
+        try:
+            async with httpx.AsyncClient() as client:
+                response = await client.post(
+                    f"{self.api_base_url}/notify",
+                    json=notification_data,
+                    timeout=10.0
+                )
+                
+                if response.status_code == 200:
+                    logger.info("Notificação enviada com sucesso via HTTP", 
+                               notification_type=notification_data.get("type"))
+                else:
+                    logger.error("Erro ao enviar notificação via HTTP", 
+                               status_code=response.status_code,
+                               response=response.text)
+                    
+        except Exception as e:
+            logger.error("Erro ao enviar notificação via HTTP", error=str(e))
+    
     async def notify_download_progress(
         self, 
         download_id: str, 
         progress: float, 
         status: str,
+        user_id: str,
         title: Optional[str] = None,
         thumbnail: Optional[str] = None,
         url: Optional[str] = None
@@ -32,8 +59,15 @@ class NotificationService:
                 "url": url
             }
             
-            await manager.send_download_update(download_id, data)
-            logger.info("Notificação de progresso enviada", download_id=download_id, progress=progress)
+            notification = {
+                "type": "download_update",
+                "download_id": download_id,
+                "user_id": user_id,
+                "data": data
+            }
+            
+            await self._send_notification(notification)
+            logger.info("Notificação de progresso enviada", download_id=download_id, progress=progress, user_id=user_id)
             
         except Exception as e:
             logger.error("Erro ao enviar notificação de progresso", error=str(e), download_id=download_id)
@@ -42,6 +76,7 @@ class NotificationService:
         self, 
         download_id: str, 
         file_path: str,
+        user_id: str,
         title: Optional[str] = None,
         thumbnail: Optional[str] = None,
         url: Optional[str] = None,
@@ -61,8 +96,15 @@ class NotificationService:
                 "format": format
             }
             
-            await manager.send_download_update(download_id, data)
-            logger.info("Notificação de conclusão enviada", download_id=download_id)
+            notification = {
+                "type": "download_update",
+                "download_id": download_id,
+                "user_id": user_id,
+                "data": data
+            }
+            
+            await self._send_notification(notification)
+            logger.info("Notificação de conclusão enviada", download_id=download_id, user_id=user_id)
             
         except Exception as e:
             logger.error("Erro ao enviar notificação de conclusão", error=str(e), download_id=download_id)
@@ -71,6 +113,7 @@ class NotificationService:
         self, 
         download_id: str, 
         error_message: str,
+        user_id: str,
         title: Optional[str] = None,
         thumbnail: Optional[str] = None,
         url: Optional[str] = None
@@ -86,8 +129,15 @@ class NotificationService:
                 "url": url
             }
             
-            await manager.send_download_update(download_id, data)
-            logger.info("Notificação de falha enviada", download_id=download_id, error=error_message)
+            notification = {
+                "type": "download_update",
+                "download_id": download_id,
+                "user_id": user_id,
+                "data": data
+            }
+            
+            await self._send_notification(notification)
+            logger.info("Notificação de falha enviada", download_id=download_id, error=error_message, user_id=user_id)
             
         except Exception as e:
             logger.error("Erro ao enviar notificação de falha", error=str(e), download_id=download_id)
@@ -95,7 +145,12 @@ class NotificationService:
     async def notify_queue_update(self, queue_data: Dict[str, Any]):
         """Notifica atualização da fila"""
         try:
-            await manager.send_queue_update(queue_data)
+            notification = {
+                "type": "queue_update",
+                "data": queue_data
+            }
+            
+            await self._send_notification(notification)
             logger.info("Notificação de fila enviada", queue_data=queue_data)
             
         except Exception as e:
@@ -104,7 +159,12 @@ class NotificationService:
     async def notify_stats_update(self, stats_data: Dict[str, Any]):
         """Notifica atualização de estatísticas"""
         try:
-            await manager.send_stats_update(stats_data)
+            notification = {
+                "type": "stats_update",
+                "data": stats_data
+            }
+            
+            await self._send_notification(notification)
             logger.info("Notificação de estatísticas enviada", stats_data=stats_data)
             
         except Exception as e:
@@ -114,7 +174,8 @@ class NotificationService:
         self,
         downloads_in_progress: List[Dict[str, Any]],
         queue_stats: Dict[str, Any],
-        system_stats: Dict[str, Any]
+        system_stats: Dict[str, Any],
+        user_id: Optional[str] = None
     ):
         """Notifica atualização completa do dashboard"""
         try:
@@ -125,7 +186,13 @@ class NotificationService:
                 "timestamp": datetime.utcnow().isoformat()
             }
             
-            await manager.send_dashboard_update(dashboard_data)
+            notification = {
+                "type": "dashboard_update",
+                "user_id": user_id,
+                "data": dashboard_data
+            }
+            
+            await self._send_notification(notification)
             logger.info("Notificação de dashboard enviada", 
                        downloads_count=len(downloads_in_progress))
             
@@ -135,7 +202,12 @@ class NotificationService:
     async def notify_general_message(self, message_type: str, data: Dict[str, Any]):
         """Envia mensagem geral"""
         try:
-            await manager.send_general_message(message_type, data)
+            notification = {
+                "type": message_type,
+                "data": data
+            }
+            
+            await self._send_notification(notification)
             logger.info("Mensagem geral enviada", message_type=message_type)
             
         except Exception as e:

@@ -34,30 +34,12 @@ SessionLocal = sessionmaker(
 
 
 def get_db() -> Generator[Session, None, None]:
-    """Dependency para obter sessão do banco de dados com retry"""
-    max_retries = 3
-    retry_delay = 1  # segundos
-    
-    for attempt in range(max_retries):
-        try:
-            db = SessionLocal()
-            yield db
-            break
-        except Exception as e:
-            logger.error(f"Erro na sessão do banco (tentativa {attempt + 1}/{max_retries})", error=str(e))
-            if attempt < max_retries - 1:
-                import time
-                time.sleep(retry_delay)
-                retry_delay *= 2  # Backoff exponencial
-                continue
-            else:
-                db.rollback()
-                raise
-        finally:
-            try:
-                db.close()
-            except:
-                pass
+    """Dependency para obter sessão do banco de dados"""
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
 
 def init_db():

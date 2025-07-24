@@ -6,7 +6,7 @@ Este guia fornece instruções detalhadas para testar todas as funcionalidades d
 
 - [Postman](https://www.postman.com/downloads/) instalado
 - API rodando localmente (`http://localhost:8000`)
-- Redis e PostgreSQL configurados
+- PostgreSQL configurado
 - Celery workers rodando
 
 ## 🔧 Configuração Inicial
@@ -394,7 +394,7 @@ Este guia fornece instruções detalhadas para testar todas as funcionalidades d
 
 1. Verifique os logs da API no terminal
 2. Use o endpoint de health check para verificar o status dos serviços
-3. Verifique se Redis e PostgreSQL estão rodando
+3. Verifique se PostgreSQL está rodando
 
 ## 📝 Notas Importantes
 

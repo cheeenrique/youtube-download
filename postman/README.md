@@ -74,7 +74,6 @@ python test_api.py http://localhost:8000
 ### ✅ Pré-requisitos
 
 - [ ] API rodando em `http://localhost:8000`
-- [ ] Redis configurado e rodando
 - [ ] PostgreSQL configurado e rodando
 - [ ] Celery workers rodando
 - [ ] Postman instalado (opcional)
@@ -200,13 +199,13 @@ python test_api.py http://localhost:8000
 
 **Solução**: Verificar se o banco de dados está configurado e acessível
 
-#### 3. Erro de Redis
+#### 3. Erro de PostgreSQL
 
 ```
 ❌ GET /optimization/cache/status - Status: 500
 ```
 
-**Solução**: Verificar se o Redis está rodando e acessível
+**Solução**: Verificar se o PostgreSQL está rodando e acessível
 
 #### 4. Erro de Celery
 
@@ -221,9 +220,6 @@ python test_api.py http://localhost:8000
 ```bash
 # Verificar se a API está rodando
 curl http://localhost:8000/health
-
-# Verificar se o Redis está rodando
-redis-cli ping
 
 # Verificar se o PostgreSQL está rodando
 psql -h localhost -U postgres -c "SELECT 1;"

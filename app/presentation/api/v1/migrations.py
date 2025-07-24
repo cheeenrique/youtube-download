@@ -248,8 +248,8 @@ async def test_celery_queue():
     try:
         from app.infrastructure.celery.celery_app import celery_app
         
-        # Envia uma tarefa de teste
-        result = celery_app.send_task('app.infrastructure.celery.tasks.analytics_tasks.test_celery_connection')
+        # Envia uma tarefa de teste simples
+        result = celery_app.send_task('app.infrastructure.celery.celery_app.debug_task')
         
         return {
             "success": True,

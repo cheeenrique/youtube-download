@@ -51,7 +51,8 @@ async def create_sync_download(
             user_id=UUID(current_user["id"]),
             quality=DownloadQuality(download_data.quality) if download_data.quality else DownloadQuality.BEST,
             status=DownloadStatus.PENDING,
-            storage_type=download_data.storage_type.value
+            storage_type=download_data.storage_type.value,
+            uploaded_to_drive=download_data.upload_to_drive
         )
         
         # Salvar no banco
@@ -97,7 +98,8 @@ async def create_batch_downloads(
                 user_id=UUID(current_user["id"]),
                 quality=DownloadQuality(batch_data.quality) if batch_data.quality else DownloadQuality.BEST,
                 status=DownloadStatus.PENDING,
-                storage_type=batch_data.storage_type.value
+                storage_type=batch_data.storage_type.value,
+                uploaded_to_drive=batch_data.upload_to_drive
             )
             
             # Salvar no banco
@@ -178,11 +180,14 @@ async def list_downloads(
 
 @router.get("/stats/summary", response_model=DownloadStatsResponse)
 async def get_download_stats(
+    current_user: Dict[str, Any] = Depends(get_current_user),
     repo: SQLAlchemyDownloadRepository = Depends(get_download_repository)
 ):
     """Obter estatísticas dos downloads"""
     try:
-        stats = await repo.get_download_stats()
+        # Se for admin, retorna estatísticas gerais, senão apenas do usuário
+        user_id = UUID(current_user["id"]) if not current_user.get("is_admin") else None
+        stats = await repo.get_download_stats(user_id=user_id)
         
         return DownloadStatsResponse(
             total_downloads=stats.get('total_downloads', 0),

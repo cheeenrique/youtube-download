@@ -10,7 +10,7 @@ class Settings(BaseSettings):
     api_v1_str: str = Field(default="/api/v1", description="Prefixo da API v1")
     project_name: str = Field(default="YouTube Download API", description="Nome do projeto")
     debug: bool = Field(default=True, description="Modo debug")
-    secret_key: str = Field(description="Chave secreta para JWT")
+    secret_key: str = Field(default="your-secret-key-change-in-production", description="Chave secreta para JWT")
     
     # Database
     database_url: str = Field(default="postgresql://youtube_user:youtube_pass@localhost:5432/youtube_downloads", description="URL de conexão com o banco de dados")

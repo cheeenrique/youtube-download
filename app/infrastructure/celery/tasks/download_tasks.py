@@ -23,12 +23,17 @@ logger = structlog.get_logger()
 class ProgressHook:
     """Hook para capturar progresso do yt-dlp"""
     
-    def __init__(self, download_id: str, notification_service):
+    def __init__(self, download_id: str, notification_service, user_id: str):
         self.download_id = download_id
         self.notification_service = notification_service
+        self.user_id = user_id
         self.last_progress = 0
+        self.last_notification_progress = 0
+        self.progress_threshold = 1  # Enviar notificação a cada 1%
     
     def __call__(self, d):
+        logger.info(f"ProgressHook chamado: {d['status']}", download_id=self.download_id, status=d['status'])
+        
         if d['status'] == 'downloading':
             # Calcular progresso
             if 'total_bytes' in d and d['total_bytes']:
@@ -38,20 +43,40 @@ class ProgressHook:
             else:
                 progress = self.last_progress
             
-            # Atualizar apenas se o progresso mudou significativamente
-            if abs(progress - self.last_progress) >= 1:
+            logger.info(f"Progresso calculado: {progress:.1f}%", 
+                       download_id=self.download_id, progress=progress, 
+                       downloaded_bytes=d.get('downloaded_bytes'), 
+                       total_bytes=d.get('total_bytes'))
+            
+            # Atualizar progresso sempre
+            if abs(progress - self.last_progress) >= 0.5:  # Reduzir threshold para mais sensibilidade
                 self.last_progress = progress
                 current_task.update_state(
                     state='PROGRESS',
                     meta={'progress': progress, 'status': 'downloading'}
                 )
+            
+            # Enviar notificação a cada 1% ou quando chegar a 100%
+            current_threshold = int(progress // self.progress_threshold) * self.progress_threshold
+            if (current_threshold > self.last_notification_progress or progress >= 100) and progress > 0:
+                self.last_notification_progress = current_threshold
                 
-                # Enviar notificação
-                self.notification_service.notify_download_progress(
-                    self.download_id, progress, 'downloading'
-                )
+                logger.info(f"Enviando notificação de progresso: {progress:.1f}%", 
+                           download_id=self.download_id, progress=progress)
+                
+                # Enviar notificação de progresso
+                try:
+                    asyncio.run(self.notification_service.notify_download_progress(
+                        self.download_id, progress, 'downloading', self.user_id
+                    ))
+                    logger.info(f"Notificação de progresso enviada com sucesso: {progress:.1f}%", 
+                               download_id=self.download_id, progress=progress)
+                except Exception as e:
+                    logger.error(f"Erro ao enviar notificação de progresso: {e}", 
+                               download_id=self.download_id, progress=progress, error=str(e))
         
         elif d['status'] == 'finished':
+            logger.info("Download finalizado", download_id=self.download_id)
             current_task.update_state(
                 state='PROGRESS',
                 meta={'progress': 100, 'status': 'finished'}
@@ -61,6 +86,7 @@ class ProgressHook:
 @celery_app.task(bind=True, name="download_video")
 def download_video_task(self, download_id: str, url: str, quality: str = "best"):
     """Task para download de vídeo"""
+    logger.info("=== INÍCIO DA TASK DE DOWNLOAD ===", download_id=download_id, url=url, quality=quality)
     db = SessionLocal()
     try:
         # Buscar download no banco
@@ -78,7 +104,7 @@ def download_video_task(self, download_id: str, url: str, quality: str = "best")
         
         # Notificar início
         asyncio.run(notification_service.notify_download_progress(
-            download_id, 0, 'downloading'
+            download_id, 0, 'downloading', str(download.user_id)
         ))
         
         # Detectar ffmpeg
@@ -101,7 +127,7 @@ def download_video_task(self, download_id: str, url: str, quality: str = "best")
         ydl_opts = {
             'format': format_option,
             'outtmpl': os.path.join(output_dir, '%(title)s.%(ext)s'),
-            'progress_hooks': [ProgressHook(download_id, notification_service)],
+            'progress_hooks': [ProgressHook(download_id, notification_service, str(download.user_id))],
             'writethumbnail': True,
             'writesubtitles': False,
             'writeautomaticsub': False,
@@ -110,6 +136,8 @@ def download_video_task(self, download_id: str, url: str, quality: str = "best")
             'quiet': False,
             'merge_output_format': 'mp4',
             'noplaylist': True,
+            'force_generic_extractor': False,
+            'nooverwrites': False,  # Permitir sobrescrever arquivos existentes
             'http_headers': {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
                 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
@@ -124,8 +152,10 @@ def download_video_task(self, download_id: str, url: str, quality: str = "best")
             ydl_opts['ffmpeg_location'] = os.path.dirname(ffmpeg_path)
 
         # Download do vídeo
+        logger.info("Iniciando download com yt-dlp", download_id=download_id, url=url)
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             # Extrair informações
+            logger.info("Extraindo informações do vídeo", download_id=download_id)
             info = ydl.extract_info(url, download=False)
             
             # Atualizar metadados
@@ -136,6 +166,7 @@ def download_video_task(self, download_id: str, url: str, quality: str = "best")
             download.quality = DownloadQuality(quality)
             download.format = info.get('ext')
             
+            logger.info("Iniciando download real", download_id=download_id, title=download.title)
             # Download real
             ydl.download([url])
             
@@ -155,6 +186,7 @@ def download_video_task(self, download_id: str, url: str, quality: str = "best")
                 asyncio.run(notification_service.notify_download_completed(
                     download_id,
                     download.file_path,
+                    str(download.user_id),
                     download.title,
                     download.thumbnail,
                     url,
@@ -223,32 +255,32 @@ def update_download_stats_task():
 @celery_app.task(name="process_download_queue")
 def process_download_queue_task():
     """Task para processar toda a fila de downloads pendentes em sequência"""
-    import time
     db = SessionLocal()
     try:
         repo = SQLAlchemyDownloadRepository(db)
-        while True:
-            pending_downloads = asyncio.run(repo.list_pending_downloads(limit=1))
-            if not pending_downloads:
-                logger.info("Nenhum download pendente na fila")
-                break
+        pending_downloads = asyncio.run(repo.list_pending_downloads(limit=5))
+        
+        if not pending_downloads:
+            logger.info("Nenhum download pendente na fila")
+            return {"status": "no_pending_downloads"}
 
-            download = pending_downloads[0]
-            download_video_task.delay(
-                str(download.id),
-                download.url,
-                download.quality.value if download.quality else "best"
-            )
-            logger.info("Download iniciado da fila", download_id=str(download.id))
+        processed_count = 0
+        for download in pending_downloads:
+            try:
+                # Disparar task de download
+                download_video_task.delay(
+                    str(download.id),
+                    download.url,
+                    download.quality.value if download.quality else "best"
+                )
+                logger.info("Download iniciado da fila", download_id=str(download.id))
+                processed_count += 1
+            except Exception as e:
+                logger.error(f"Erro ao iniciar download {download.id}", error=str(e))
 
-            # Espera o download terminar antes de pegar o próximo
-            while True:
-                updated = asyncio.run(repo.get_by_id(download.id))
-                if updated.status in [DownloadStatus.COMPLETED, DownloadStatus.FAILED]:
-                    break
-                time.sleep(2)  # espera 2 segundos antes de checar de novo
-
-        return {"status": "all_processed"}
+        logger.info(f"Processados {processed_count} downloads da fila")
+        return {"status": "processed", "count": processed_count}
+        
     except Exception as e:
         logger.error("Erro ao processar fila", error=str(e))
         raise

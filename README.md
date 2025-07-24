@@ -51,7 +51,6 @@ Uma API robusta para download de vídeos do YouTube com recursos avançados de m
 - **Google Drive** para upload automático
 - **URLs temporárias** com controle de acesso
 - **Analytics** e rastreabilidade completa
-- **Cache Redis** para otimização
 
 ## 📋 Pré-requisitos
 
@@ -78,6 +77,8 @@ cp env.example .env
 
 ### 3. Inicie com Docker (Recomendado)
 
+#### **Apenas API (Backend)**
+
 ```bash
 # Modo desenvolvimento (hot-reload)
 docker-compose up -d
@@ -86,7 +87,25 @@ docker-compose up -d
 docker-compose -f docker-compose.prod.yml up -d
 ```
 
+#### **API + Frontend (Completo)**
+
+```bash
+# Usando script PowerShell (Windows)
+.\start-frontend.ps1
+
+# Ou manualmente
+docker-compose -f docker-compose.frontend.yml up -d
+```
+
+#### **Scripts Disponíveis**
+
+- `start-frontend.ps1` - Inicia API + Frontend
+- `stop-frontend.ps1` - Para todos os serviços
+- `logs-frontend.ps1` - Ver logs em tempo real
+
 ### 4. Instalação Manual
+
+#### **Backend (API)**
 
 ```bash
 # Instale as dependências
@@ -101,17 +120,37 @@ celery -A app.infrastructure.celery.celery_app worker --loglevel=info
 celery -A app.infrastructure.celery.celery_app beat --loglevel=info
 ```
 
-## 🚀 Deploy no Railway
+#### **Frontend**
 
-Para fazer deploy no Railway, consulte o [Guia de Deploy](docs/RAILWAY_DEPLOY.md).
+```bash
+# Navegue para a pasta frontend
+cd frontend
 
-### Arquivos de Deploy
-- `Dockerfile.prod` - Para API principal
-- `Dockerfile.celery` - Para Celery worker
-- `Dockerfile.celery-beat` - Para Celery beat
-- `Dockerfile.unified` - Para múltiplos serviços
-- `railway.json` - Configuração do Railway
-- `start.sh` - Script de inicialização flexível
+# Instale as dependências
+npm install
+
+# Execute em desenvolvimento
+npm run dev
+
+# Build para produção
+npm run build
+npm start
+```
+
+## 🌐 URLs de Acesso
+
+### **Com Frontend**
+
+- **Frontend**: http://localhost:3000
+- **API**: http://localhost:8000
+- **Documentação**: http://localhost:8000/api/docs
+- **Banco de dados**: localhost:5432
+
+### **Apenas API**
+
+- **API**: http://localhost:8000
+- **Documentação**: http://localhost:8000/api/docs
+- **Banco de dados**: localhost:5432
 
 ## 🔐 Autenticação e Usuários
 

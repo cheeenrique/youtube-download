@@ -1,8 +1,10 @@
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
 import structlog
 import time
+import os
 from datetime import datetime, timezone
 
 from .shared.config import settings
@@ -102,6 +104,25 @@ async def root():
 
 # Incluir routers
 app.include_router(api_v1_router, prefix=settings.api_v1_str)
+
+# Incluir WebSocket router (endpoints HTTP e WebSocket)
+from .presentation.api.v1.websocket import router as websocket_router
+app.include_router(websocket_router)
+
+# Servir arquivos de vídeo estáticos
+@app.get("/videos/{file_path:path}")
+async def serve_video(file_path: str):
+    """Servir arquivos de vídeo"""
+    video_path = os.path.join(settings.videos_dir, file_path)
+    
+    if not os.path.exists(video_path):
+        raise HTTPException(status_code=404, detail="Arquivo não encontrado")
+    
+    return FileResponse(
+        path=video_path,
+        filename=os.path.basename(video_path),
+        media_type='application/octet-stream'
+    )
 
 @app.on_event("startup")
 async def startup_event():

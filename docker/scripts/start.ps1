@@ -43,7 +43,7 @@ docker-compose ps
 
 # Verificar health checks
 Write-Host "🏥 Verificando health checks..." -ForegroundColor Yellow
-$services = @("api", "db", "redis", "celery")
+$services = @("api", "db", "celery")
 foreach ($service in $services) {
     $status = docker-compose ps | Select-String $service
     if ($status -match "Up") {

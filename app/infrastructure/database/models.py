@@ -35,6 +35,8 @@ class DownloadModel(Base):
     download_count = Column(Integer, default=0)
     last_accessed = Column(DateTime)
     storage_type = Column(String(20), default="temporary", index=True)
+    uploaded_to_drive = Column(Boolean, default=False)
+    drive_file_id = Column(String(255), nullable=True)
     
     # Relacionamentos
     user = relationship("UserModel", back_populates="downloads")

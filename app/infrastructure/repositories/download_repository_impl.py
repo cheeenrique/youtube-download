@@ -341,13 +341,20 @@ class SQLAlchemyDownloadRepository(DownloadRepository):
             logger.error("Erro ao buscar downloads por status", error=str(e), status=status.value)
             raise
     
-    async def get_download_stats(self) -> Dict[str, Any]:
+    async def get_download_stats(self, user_id: Optional[UUID] = None) -> Dict[str, Any]:
         """Busca estatísticas dos downloads"""
         try:
             from datetime import datetime, timedelta
             
+            # Query base
+            base_query = self.db.query(DownloadModel)
+            
+            # Filtrar por usuário se especificado
+            if user_id:
+                base_query = base_query.filter(DownloadModel.user_id == user_id)
+            
             # Estatísticas por status
-            stats = self.db.query(
+            stats = base_query.with_entities(
                 DownloadModel.status,
                 func.count(DownloadModel.id).label('count')
             ).group_by(DownloadModel.status).all()
@@ -375,20 +382,20 @@ class SQLAlchemyDownloadRepository(DownloadRepository):
             week_ago = datetime.utcnow() - timedelta(days=7)
             month_ago = datetime.utcnow() - timedelta(days=30)
             
-            downloads_today = self.db.query(DownloadModel).filter(
+            downloads_today = base_query.filter(
                 func.date(DownloadModel.created_at) == today
             ).count()
             
-            downloads_this_week = self.db.query(DownloadModel).filter(
+            downloads_this_week = base_query.filter(
                 DownloadModel.created_at >= week_ago
             ).count()
             
-            downloads_this_month = self.db.query(DownloadModel).filter(
+            downloads_this_month = base_query.filter(
                 DownloadModel.created_at >= month_ago
             ).count()
             
             # Estatísticas de armazenamento e tempo
-            completed_downloads = self.db.query(DownloadModel).filter(
+            completed_downloads = base_query.filter(
                 DownloadModel.status == DownloadStatus.COMPLETED.value
             ).all()
             

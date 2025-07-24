@@ -12,11 +12,16 @@ class FileStorageService:
     """Serviço para gerenciamento de arquivos e relatórios"""
     
     def __init__(self, base_path: str = "/app"):
+        """
+        Inicializa o serviço de armazenamento de arquivos
+        
+        Args:
+            base_path: Caminho base para armazenamento
+        """
         self.base_path = Path(base_path)
         self.reports_path = self.base_path / "reports"
         self.videos_path = self.base_path / "videos"
         self.logs_path = self.base_path / "logs"
-        self.analytics_path = self.base_path / "analytics"
         
         # Criar diretórios se não existirem
         self._ensure_directories()
@@ -32,9 +37,7 @@ class FileStorageService:
             self.videos_path / "permanent",
             self.videos_path / "temporary",
             self.videos_path / "temp",
-            self.logs_path,
-            self.analytics_path,
-            self.analytics_path / "aggregated"
+            self.logs_path
         ]
         
         for directory in directories:
@@ -318,8 +321,7 @@ class FileStorageService:
                 "directory_count": 0,
                 "reports_size": 0,
                 "videos_size": 0,
-                "logs_size": 0,
-                "analytics_size": 0
+                "logs_size": 0
             }
             
             # Calcular estatísticas para cada diretório principal
@@ -339,8 +341,6 @@ class FileStorageService:
                             stats["videos_size"] += file_size
                         elif str(relative_path).startswith("logs"):
                             stats["logs_size"] += file_size
-                        elif str(relative_path).startswith("analytics"):
-                            stats["analytics_size"] += file_size
                             
                     except Exception as e:
                         logger.warning(f"Erro ao processar arquivo {file_path}: {str(e)}")
@@ -348,7 +348,7 @@ class FileStorageService:
                 stats["directory_count"] += len(dirs)
             
             # Converter para MB para melhor legibilidade
-            for key in ["total_size", "reports_size", "videos_size", "logs_size", "analytics_size"]:
+            for key in ["total_size", "reports_size", "videos_size", "logs_size"]:
                 stats[f"{key}_mb"] = round(stats[key] / (1024 * 1024), 2)
             
             return stats

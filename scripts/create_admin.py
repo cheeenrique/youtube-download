@@ -1,8 +1,15 @@
 import sys
+import hashlib
+import secrets
 from datetime import datetime
 from app.shared.config import settings
 from app.infrastructure.database import get_db, UserModel
-from app.infrastructure.security.security_service import SecurityService
+
+def hash_password(password: str) -> tuple[str, str]:
+    """Hash password with salt"""
+    salt = secrets.token_hex(16)
+    hashed = hashlib.sha256((password + salt).encode()).hexdigest()
+    return hashed, salt
 
 # Parâmetros
 username = "admin"
@@ -19,8 +26,7 @@ if len(sys.argv) > 3:
 if len(sys.argv) > 4:
     full_name = sys.argv[4]
 
-security_service = SecurityService(settings.secret_key)
-hashed_password, salt = security_service.hash_password(password)
+hashed_password, salt = hash_password(password)
 
 db = next(get_db())
 

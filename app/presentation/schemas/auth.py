@@ -12,7 +12,7 @@ class UserRegisterRequest(BaseModel):
 
 
 class UserLoginRequest(BaseModel):
-    username: str = Field(..., description="Username or email")
+    username_or_email: str = Field(..., description="Username or email")
     password: str = Field(..., description="Password")
     expires_in: Optional[int] = Field(3600, ge=300, le=86400, description="Token expiration time in seconds")
 
@@ -22,14 +22,14 @@ class UserResponse(BaseModel):
     username: str = Field(..., description="Username")
     email: str = Field(..., description="Email address")
     full_name: Optional[str] = Field(None, description="Full name")
+    role: str = Field(..., description="User role")
     is_active: bool = Field(..., description="Whether the user account is active")
-    is_admin: bool = Field(..., description="Whether the user is an admin")
     created_at: datetime = Field(..., description="Account creation timestamp")
-    last_login: Optional[datetime] = Field(None, description="Last login timestamp")
-    login_count: int = Field(..., description="Number of successful logins")
+    updated_at: datetime = Field(..., description="Account update timestamp")
 
 
 class UserProfileRequest(BaseModel):
+    username: Optional[str] = Field(None, min_length=3, max_length=50, description="New username")
     email: Optional[EmailStr] = Field(None, description="New email address")
     full_name: Optional[str] = Field(None, max_length=100, description="New full name")
     preferences: Optional[Dict[str, Any]] = Field(None, description="Updated preferences")
@@ -40,8 +40,10 @@ class UserProfileResponse(BaseModel):
     username: str = Field(..., description="Username")
     email: str = Field(..., description="Email address")
     full_name: Optional[str] = Field(None, description="Full name")
-    preferences: Dict[str, Any] = Field(..., description="User preferences")
-    updated_at: datetime = Field(..., description="Profile update timestamp")
+    role: str = Field(..., description="User role")
+    is_active: bool = Field(..., description="Whether the user account is active")
+    created_at: datetime = Field(..., description="Account creation timestamp")
+    updated_at: datetime = Field(..., description="Account update timestamp")
 
 
 class PasswordChangeRequest(BaseModel):
@@ -173,7 +175,7 @@ class UserBulkActionResponse(BaseModel):
     affected_users: int = Field(..., description="Number of users affected")
     success_count: int = Field(..., description="Number of successful operations")
     error_count: int = Field(..., description="Number of failed operations")
-    errors: List[Dict[str, Any]] = Field(..., description="List of errors")
+    errors: List[Dict[str, Any]] = Field(None, description="List of errors")
 
 
 class UserExportRequest(BaseModel):

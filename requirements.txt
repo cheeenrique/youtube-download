@@ -38,4 +38,6 @@ psutil==6.1.0
 # prometheus-client==0.19.0  # opcional para métricas 
 email-validator 
 kombu[sqlalchemy]==5.5.4
-celery[sqlalchemy]==5.5.3 
+celery[sqlalchemy]==5.5.3
+websockets>=10.0
+httpx>=0.24.0 

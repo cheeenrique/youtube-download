@@ -45,7 +45,7 @@ docker-compose ps
 
 # Verificar health checks
 echo "🏥 Verificando health checks..."
-for service in api db redis celery; do
+for service in api db celery; do
     if docker-compose ps | grep -q "$service.*Up"; then
         echo "✅ $service está rodando"
     else

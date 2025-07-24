@@ -14,9 +14,6 @@ case $SERVICE in
     "db")
         docker-compose logs -f db
         ;;
-    "redis")
-        docker-compose logs -f redis
-        ;;
     "celery")
         docker-compose logs -f celery
         ;;
@@ -32,7 +29,7 @@ case $SERVICE in
     *)
         echo "❌ Serviço '$SERVICE' não encontrado."
         echo "📋 Serviços disponíveis:"
-        echo "   api, db, redis, celery, celery-beat, nginx, all"
+        echo "   api, db, celery, celery-beat, nginx, all"
         exit 1
         ;;
 esac 
