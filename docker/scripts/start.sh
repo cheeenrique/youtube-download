@@ -1,71 +1,22 @@
 #!/bin/bash
 
-# Script para iniciar o YouTube Download API com Docker
-# Uso: ./docker/scripts/start.sh
-
+# Script de inicialização para produção (Railway)
 set -e
 
-echo "🚀 Iniciando YouTube Download API..."
+echo "🚀 Iniciando YouTube Download API em produção..."
 
-# Verificar se o Docker está rodando
-if ! docker info > /dev/null 2>&1; then
-    echo "❌ Docker não está rodando. Por favor, inicie o Docker primeiro."
-    exit 1
-fi
+# Executar migrações do banco de dados
+echo "🗄️ Executando migrações..."
+python run_migration.py
 
-# Verificar se o docker-compose está disponível
-if ! command -v docker-compose &> /dev/null; then
-    echo "❌ docker-compose não está instalado."
-    exit 1
-fi
+# Iniciar Nginx em background
+echo "🌐 Iniciando Nginx..."
+nginx -g "daemon off;" &
+NGINX_PID=$!
 
-# Criar diretórios necessários
-echo "📁 Criando diretórios..."
-mkdir -p videos/permanent videos/temporary videos/temp logs/nginx
+# Aguardar um pouco para o Nginx inicializar
+sleep 2
 
-# Definir permissões (Linux/Mac)
-if [[ "$OSTYPE" == "linux-gnu"* ]] || [[ "$OSTYPE" == "darwin"* ]]; then
-    chmod -R 755 videos logs
-fi
-
-# Construir e iniciar os containers
-echo "🔨 Construindo containers..."
-docker-compose build
-
-echo "🚀 Iniciando serviços..."
-docker-compose up -d
-
-# Aguardar os serviços ficarem prontos
-echo "⏳ Aguardando serviços ficarem prontos..."
-sleep 10
-
-# Verificar status dos containers
-echo "📊 Status dos containers:"
-docker-compose ps
-
-# Verificar health checks
-echo "🏥 Verificando health checks..."
-for service in api db celery; do
-    if docker-compose ps | grep -q "$service.*Up"; then
-        echo "✅ $service está rodando"
-    else
-        echo "❌ $service não está rodando corretamente"
-    fi
-done
-
-# Executar migrações
-echo "🗄️ Executando migrações do banco de dados..."
-docker-compose exec api alembic upgrade head
-
-echo "🎉 YouTube Download API iniciado com sucesso!"
-echo ""
-echo "📋 URLs disponíveis:"
-echo "   🌐 API: http://localhost"
-echo "   📚 Documentação: http://localhost/api/docs"
-echo "   🔌 WebSocket: ws://localhost/ws/dashboard"
-echo "   📺 SSE: http://localhost/downloads/dashboard/stream"
-echo ""
-echo "📝 Logs:"
-echo "   docker-compose logs -f api"
-echo ""
-echo "🛑 Para parar: docker-compose down" 
+# Iniciar a API FastAPI
+echo "🔧 Iniciando API FastAPI..."
+exec uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers 1 

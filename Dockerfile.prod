@@ -1,4 +1,22 @@
-# Usar imagem base Python 3.11 slim
+# Multi-stage build para frontend e backend
+FROM node:18-alpine AS frontend-builder
+
+# Definir diretório de trabalho para frontend
+WORKDIR /app/frontend
+
+# Copiar package.json e package-lock.json
+COPY frontend/package*.json ./
+
+# Instalar dependências do frontend
+RUN npm ci --only=production
+
+# Copiar código do frontend
+COPY frontend/ ./
+
+# Build do frontend
+RUN npm run build
+
+# Stage para o backend
 FROM python:3.11-slim
 
 # Definir variáveis de ambiente
@@ -14,6 +32,7 @@ RUN apt-get update && apt-get install -y \
     curl \
     wget \
     gnupg \
+    nginx \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean
 
@@ -27,11 +46,27 @@ WORKDIR /app
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copiar código da aplicação
+# Copiar código da aplicação backend
 COPY app/ ./app/
 COPY alembic/ ./alembic/
 COPY alembic.ini ./
 COPY run_migration.py ./
+
+# Copiar frontend build do stage anterior
+COPY --from=frontend-builder /app/frontend/.next ./frontend/.next
+COPY --from=frontend-builder /app/frontend/public ./frontend/public
+COPY --from=frontend-builder /app/frontend/package.json ./frontend/package.json
+
+# Instalar dependências de produção do frontend
+WORKDIR /app/frontend
+RUN npm ci --only=production
+
+# Voltar para o diretório raiz
+WORKDIR /app
+
+# Configurar Nginx para servir o frontend
+COPY docker/nginx/nginx.conf /etc/nginx/nginx.conf
+COPY docker/nginx/conf.d/default.conf /etc/nginx/conf.d/default.conf
 
 # Criar diretórios necessários e definir permissões
 RUN mkdir -p /app/videos/permanent \
@@ -40,7 +75,9 @@ RUN mkdir -p /app/videos/permanent \
     /app/logs \
     /app/static \
     /app/media \
-    && chown -R appuser:appuser /app
+    /var/log/nginx \
+    && chown -R appuser:appuser /app \
+    && chown -R appuser:appuser /var/log/nginx
 
 # Mudar para usuário não-root
 USER appuser
@@ -52,5 +89,9 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
     CMD curl -f http://localhost:8000/health || exit 1
 
-# Comando padrão (executa migrações e depois inicia a API)
-CMD ["sh", "-c", "python run_migration.py && uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers 1"] 
+# Script de inicialização
+COPY docker/scripts/start.sh ./start.sh
+RUN chmod +x ./start.sh
+
+# Comando padrão (executa migrações, inicia Nginx e depois inicia a API)
+CMD ["./start.sh"] 
