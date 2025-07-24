@@ -73,6 +73,10 @@ RUN mkdir -p /app/videos/permanent \
     && chown -R appuser:appuser /app \
     && chown -R appuser:appuser /var/log/nginx
 
+# Script de inicialização
+COPY docker/scripts/start.sh ./start.sh
+RUN chmod +x ./start.sh
+
 # Mudar para usuário não-root
 USER appuser
 
@@ -82,10 +86,6 @@ EXPOSE 8000
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
     CMD curl -f http://localhost:8000/health || exit 1
-
-# Script de inicialização
-COPY docker/scripts/start.sh ./start.sh
-RUN chmod +x ./start.sh
 
 # Comando padrão (executa migrações, inicia Nginx e depois inicia a API)
 CMD ["./start.sh"] 
