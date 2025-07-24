@@ -179,7 +179,7 @@ def cleanup_temp_directory_task():
                 # Verificar se é um arquivo
                 if os.path.isfile(file_path):
                     # Verificar se o arquivo é antigo (mais de 1 hora)
-                    file_time = datetime.fromtimestamp(os.path.getctime(file_path))
+                    file_time = datetime.fromtimestamp(os.path.getctime(file_path), tz=timezone.utc)
                     if datetime.now(timezone.utc) - file_time > timedelta(hours=1):
                         os.remove(file_path)
                         deleted_count += 1
@@ -188,7 +188,7 @@ def cleanup_temp_directory_task():
                 # Verificar se é um diretório
                 elif os.path.isdir(file_path):
                     # Verificar se o diretório é antigo (mais de 1 hora)
-                    dir_time = datetime.fromtimestamp(os.path.getctime(file_path))
+                    dir_time = datetime.fromtimestamp(os.path.getctime(file_path), tz=timezone.utc)
                     if datetime.now(timezone.utc) - dir_time > timedelta(hours=1):
                         shutil.rmtree(file_path)
                         deleted_count += 1
@@ -290,7 +290,7 @@ def cleanup_orphaned_files_task():
                     if file_path not in registered_paths:
                         try:
                             # Verificar se o arquivo é antigo (mais de 24 horas)
-                            file_time = datetime.fromtimestamp(os.path.getctime(file_path))
+                            file_time = datetime.fromtimestamp(os.path.getctime(file_path), tz=timezone.utc)
                             if datetime.now(timezone.utc) - file_time > timedelta(hours=24):
                                 os.remove(file_path)
                                 orphaned_count += 1

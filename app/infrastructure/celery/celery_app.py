@@ -65,6 +65,40 @@ celery_app.conf.update(
     
     # Configurações específicas para desenvolvimento/produção
     worker_disable_rate_limits=True,
+    
+    # Configuração do Beat Schedule para tarefas agendadas
+    beat_schedule={
+        # Limpar arquivos temporários expirados a cada 15 minutos
+        'cleanup-expired-files': {
+            'task': 'cleanup_expired_files',
+            'schedule': 900.0,  # 15 minutos
+        },
+        # Limpar downloads temporários a cada 30 minutos
+        'cleanup-temporary-downloads': {
+            'task': 'cleanup_temporary_downloads',
+            'schedule': 1800.0,  # 30 minutos
+        },
+        # Limpar diretório temporário a cada 10 minutos
+        'cleanup-temp-directory': {
+            'task': 'cleanup_temp_directory',
+            'schedule': 600.0,  # 10 minutos
+        },
+        # Limpar arquivos órfãos a cada hora
+        'cleanup-orphaned-files': {
+            'task': 'cleanup_orphaned_files',
+            'schedule': 3600.0,  # 1 hora
+        },
+        # Limpar logs antigos uma vez por dia às 2h da manhã
+        'cleanup-old-logs': {
+            'task': 'cleanup_old_logs',
+            'schedule': crontab(hour=2, minute=0),  # 2h da manhã
+        },
+        # Limpar downloads falhados uma vez por dia às 3h da manhã
+        'cleanup-failed-downloads': {
+            'task': 'cleanup_failed_downloads',
+            'schedule': crontab(hour=3, minute=0),  # 3h da manhã
+        },
+    },
 )
 
 # Configurar logging do Celery
