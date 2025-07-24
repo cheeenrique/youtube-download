@@ -91,16 +91,19 @@ async def health_check():
         "version": "1.0.0"
     }
 
-# Endpoint raiz
+# Endpoint raiz - servir o frontend
 @app.get("/")
 async def root():
-    """Endpoint raiz - redireciona para documentação"""
-    return {
-        "message": "YouTube Download API",
-        "version": "1.0.0",
-        "docs": "/api/docs",
-        "health": "/health"
-    }
+    """Endpoint raiz - servir o frontend"""
+    frontend_path = "/app/frontend/out/index.html"
+    
+    if not os.path.exists(frontend_path):
+        raise HTTPException(status_code=404, detail="Frontend não encontrado")
+    
+    return FileResponse(
+        path=frontend_path,
+        media_type='text/html'
+    )
 
 # Incluir routers
 app.include_router(api_v1_router, prefix=settings.api_v1_str)
@@ -122,6 +125,41 @@ async def serve_video(file_path: str):
         path=video_path,
         filename=os.path.basename(video_path),
         media_type='application/octet-stream'
+    )
+
+# Servir arquivos estáticos do frontend
+@app.get("/{full_path:path}")
+async def serve_frontend(full_path: str):
+    """Servir arquivos estáticos do frontend Next.js"""
+    # Se for um endpoint da API, não servir como frontend
+    if full_path.startswith(("api/", "health", "videos/", "ws/", "downloads/")):
+        raise HTTPException(status_code=404, detail="Not found")
+    
+    # Caminho para os arquivos estáticos do frontend
+    frontend_path = os.path.join("/app/frontend/out", full_path)
+    
+    # Se o arquivo não existir, servir o index.html (SPA routing)
+    if not os.path.exists(frontend_path) or os.path.isdir(frontend_path):
+        frontend_path = "/app/frontend/out/index.html"
+    
+    if not os.path.exists(frontend_path):
+        raise HTTPException(status_code=404, detail="Not found")
+    
+    # Determinar o tipo MIME baseado na extensão
+    if full_path.endswith('.html'):
+        media_type = 'text/html'
+    elif full_path.endswith('.css'):
+        media_type = 'text/css'
+    elif full_path.endswith('.js'):
+        media_type = 'application/javascript'
+    elif full_path.endswith(('.png', '.jpg', '.jpeg', '.gif', '.ico', '.svg')):
+        media_type = None  # Deixar o FastAPI detectar automaticamente
+    else:
+        media_type = 'text/plain'
+    
+    return FileResponse(
+        path=frontend_path,
+        media_type=media_type
     )
 
 @app.on_event("startup")
