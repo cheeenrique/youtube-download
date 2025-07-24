@@ -56,13 +56,7 @@ COPY run_migration.py ./
 COPY --from=frontend-builder /app/frontend/.next ./frontend/.next
 COPY --from=frontend-builder /app/frontend/public ./frontend/public
 COPY --from=frontend-builder /app/frontend/package.json ./frontend/package.json
-
-# Instalar dependências de produção do frontend
-WORKDIR /app/frontend
-RUN npm ci --only=production
-
-# Voltar para o diretório raiz
-WORKDIR /app
+COPY --from=frontend-builder /app/frontend/node_modules ./frontend/node_modules
 
 # Configurar Nginx para servir o frontend
 COPY docker/nginx/nginx.conf /etc/nginx/nginx.conf
