@@ -9,6 +9,11 @@ echo "🚀 Iniciando YouTube Download API em produção..."
 echo "🗄️ Executando migrações..."
 python run_migration.py
 
+# Verificar se as migrações foram bem-sucedidas
+if [ $? -ne 0 ]; then
+    echo "⚠️ Aviso: Migrações falharam, mas continuando..."
+fi
+
 # Iniciar Nginx em background
 echo "🌐 Iniciando Nginx..."
 nginx -g "daemon off;" &
