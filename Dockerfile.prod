@@ -52,11 +52,10 @@ COPY alembic/ ./alembic/
 COPY alembic.ini ./
 COPY run_migration.py ./
 
-# Copiar frontend build do stage anterior
-COPY --from=frontend-builder /app/frontend/.next ./frontend/.next
+# Copiar frontend build do stage anterior (standalone)
+COPY --from=frontend-builder /app/frontend/.next/standalone ./
+COPY --from=frontend-builder /app/frontend/.next/static ./frontend/.next/static
 COPY --from=frontend-builder /app/frontend/public ./frontend/public
-COPY --from=frontend-builder /app/frontend/package.json ./frontend/package.json
-COPY --from=frontend-builder /app/frontend/node_modules ./frontend/node_modules
 
 # Configurar Nginx para servir o frontend
 COPY docker/nginx/nginx.conf /etc/nginx/nginx.conf

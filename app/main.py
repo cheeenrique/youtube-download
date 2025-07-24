@@ -95,7 +95,7 @@ async def health_check():
 @app.get("/")
 async def root():
     """Endpoint raiz - servir o frontend"""
-    frontend_path = "/app/frontend/out/index.html"
+    frontend_path = "/app/frontend/index.html"
     
     if not os.path.exists(frontend_path):
         raise HTTPException(status_code=404, detail="Frontend não encontrado")
@@ -136,11 +136,11 @@ async def serve_frontend(full_path: str):
         raise HTTPException(status_code=404, detail="Not found")
     
     # Caminho para os arquivos estáticos do frontend
-    frontend_path = os.path.join("/app/frontend/out", full_path)
+    frontend_path = os.path.join("/app/frontend", full_path)
     
     # Se o arquivo não existir, servir o index.html (SPA routing)
     if not os.path.exists(frontend_path) or os.path.isdir(frontend_path):
-        frontend_path = "/app/frontend/out/index.html"
+        frontend_path = "/app/frontend/index.html"
     
     if not os.path.exists(frontend_path):
         raise HTTPException(status_code=404, detail="Not found")
